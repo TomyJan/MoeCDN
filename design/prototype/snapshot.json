@@ -1,0 +1,15 @@
+{
+  "date": "2026-10-28",
+  "resourceRevision": "794eb243b686806ba9809c0d6bcdc4e94f0f6544",
+  "description": "最终确认的交互设计快照；资源索引、字体、图标与页面脚本按原样保存。",
+  "sha256": {
+    "index.html": "3bb269763d206730ae8c0a87567f6a07e0aa171e9864f5e501803f49920f1433",
+    "app.js": "07ec861b39fc695939a335a188ebb64921436a42c7c27550b354ed6be1b62b4e",
+    "style.css": "99a04aa4c21eb417989ba0d3ff0c0d0eedd1f6c519df2fa9b433256337c8959f",
+    "data.js": "9a70ada49aff08a53c68aa7111d3a68aebffedb4e9861dfd5a0d5ed9f50fba38",
+    "fonts.css": "f76038f23b6cb8374e75b60eb9520efbd685099f0d81c9937d7933a8d5301a99",
+    "lucide.js": "fde878a4f7aebe548b071eaaf343d898f66d275e93970abe95d8ca5fda290b51",
+    "marked.js": "d7931d1cd7bf727dd756c871637edcc9e0f8538003b927368400ec1ee47a9dd9",
+    "purify.js": "89e1fa7647cb495370d3a997ace4387f5d15d9f4c5af12352c53daa400956287"
+  }
+}

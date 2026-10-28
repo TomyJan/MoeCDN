@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>MoeCDN · 设计预览</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/fontsource-source-code-pro/5.0.8/index.min.css">
+<link rel="stylesheet" href="/_moecdn/fonts.css">
+<link rel="stylesheet" href="/_moecdn/style.css">
+<script src="/_moecdn/lucide.js" defer></script>
+<script src="/_moecdn/data.js" defer></script>
+<script src="/_moecdn/marked.js" defer></script>
+<script src="/_moecdn/purify.js" defer></script>
+<script src="/_moecdn/app.js" defer></script>
+</head>
+<body>
+<div id="app">
+<header class="topbar">
+<a href="/" class="brand" aria-label="MoeCDN"><span class="brand-mark" aria-hidden="true">/›</span><span>MoeCDN</span><span class="domain">cdn.amoe.cc</span></a>
+<div class="top-actions"><a class="nav-link" href="https://vov.moe" target="_blank" rel="noopener noreferrer" data-i18n-label="home"><i data-lucide="house"></i><span data-i18n="home"></span></a><a class="nav-link" href="https://blog.tomys.top" target="_blank" rel="noopener noreferrer" data-i18n-label="blog"><i data-lucide="notebook-pen"></i><span data-i18n="blog"></span></a>
+<button id="nav-toggle" class="icon-button mobile-only" data-i18n-label="directoryNav" aria-expanded="false"><i data-lucide="panel-left"></i></button>
+<div class="dropdown" id="language-picker"><button class="icon-button menu-trigger" data-i18n-label="language" aria-haspopup="menu" aria-expanded="false"><i data-lucide="languages"></i></button><div class="menu" role="menu" hidden></div></div>
+<div class="dropdown" id="theme-picker"><button class="icon-button menu-trigger" data-i18n-label="appearance" aria-haspopup="menu" aria-expanded="false"><i data-lucide="monitor"></i></button><div class="menu" role="menu" hidden></div></div>
+</div>
+</header>
+<div class="layout">
+<aside class="sidebar" id="sidebar"><div class="sidebar-heading"><span data-i18n="directories"></span><button id="collapse-tree" class="icon-button" data-i18n-label="collapseAll"><i data-lucide="list-tree"></i></button></div><nav id="tree" aria-label="Directories"></nav></aside>
+<main>
+<nav id="breadcrumbs" class="breadcrumbs" aria-label="Breadcrumbs"></nav>
+<div class="heading"><div class="heading-main"><img id="heading-icon" alt=""><div><h1 id="title"></h1><p id="subtitle"></p></div></div><button class="icon-button" id="copy-directory" data-i18n-label="copyDirectory"><i data-lucide="link"></i></button></div>
+<div class="searchbox" role="search"><i data-lucide="search" aria-hidden="true"></i><input type="search" id="query" autocomplete="off" data-i18n-placeholder="searchPlaceholder"><kbd>/</kbd><button class="icon-button" id="clear-search" data-i18n-label="clearSearch" hidden><i data-lucide="x"></i></button><div class="dropdown scope-picker" id="scope-picker"><button class="menu-trigger text-button" aria-haspopup="menu" aria-expanded="false"><span class="picker-value"></span><i data-lucide="chevron-down"></i></button><div class="menu" role="menu" hidden></div></div></div>
+<div class="list-toolbar"><div id="result-count" aria-live="polite"></div><div class="dropdown" id="sort-picker"><button class="text-button menu-trigger" aria-haspopup="menu" aria-expanded="false"><i data-lucide="arrow-down-wide-narrow"></i><span class="picker-value"></span><i data-lucide="chevron-down"></i></button><div class="menu" role="menu" hidden></div></div></div>
+<table class="file-table"><thead><tr><th scope="col" data-i18n="name"></th><th scope="col" class="size-column" data-i18n="size"></th><th scope="col" class="date-column" data-i18n="modified"></th><th scope="col" class="action-column"><span data-i18n="actions"></span></th></tr></thead><tbody id="rows"></tbody></table>
+<div id="empty" class="empty-state" hidden><i data-lucide="search-x"></i><h2 data-i18n="noResults"></h2><p data-i18n="noResultsHint"></p><button class="button secondary" id="search-global" data-i18n="searchGlobal"></button></div>
+<div class="list-footer"><span id="load-status" role="status" hidden></span></div>
+<div id="load-sentinel" aria-hidden="true"></div></main>
+</div>
+<footer class="page-footer"><a href="https://github.com/TomyJan/MoeCDN" target="_blank" rel="noopener noreferrer">MoeCDN</a> <a class="commit-link" href="https://github.com/TomyJan/MoeCDN/commit/794eb243b686806ba9809c0d6bcdc4e94f0f6544" target="_blank" rel="noopener noreferrer">794eb243</a></footer>
+</div>
+<dialog id="preview-dialog" class="preview-dialog" aria-labelledby="preview-name">
+<header class="preview-header"><div class="preview-filename"><img id="preview-icon" alt=""><h2 id="preview-name"></h2></div><div class="preview-tools"><div id="preview-modes" class="preview-modes" role="group" aria-label="Preview mode" hidden><button data-mode="source" aria-pressed="true" data-i18n-label="sourceMode"><i data-lucide="code"></i><span class="mode-label" data-i18n="sourceMode"></span></button><button data-mode="render" aria-pressed="false" data-i18n-label="renderMode"><i data-lucide="eye"></i><span class="mode-label" data-i18n="renderMode"></span></button><button data-mode="split" aria-pressed="false" data-i18n-label="splitMode"><i data-lucide="columns-2"></i><span class="mode-label" data-i18n="splitMode"></span></button></div><button class="icon-button" id="preview-copy" data-i18n-label="copyLink"><i data-lucide="copy"></i></button><button class="icon-button" id="preview-advanced" data-i18n-label="advancedCopy"><i data-lucide="code-xml"></i></button><a class="icon-button" id="preview-original" target="_blank" rel="noopener" data-i18n-label="openOriginal"><i data-lucide="external-link"></i></a><a class="icon-button" id="preview-download" download data-i18n-label="download"><i data-lucide="download"></i></a><span class="tool-divider"></span><button class="icon-button" id="preview-close" data-i18n-label="close"><i data-lucide="x"></i></button></div></header>
+<div id="preview-body" class="preview-body" aria-live="polite"></div>
+<footer id="preview-properties" class="preview-properties"></footer>
+</dialog>
+<div id="copy-dialog" class="copy-popup" popover="auto" role="dialog" aria-label="Advanced copy">
+<div class="copy-content">
+<fieldset><legend data-i18n="copyFormat"></legend><div class="choice-grid format-grid" id="format-choices"></div></fieldset>
+<div id="options-region" class="popup-region"><div class="advanced-options"><label class="check-option"><input type="checkbox" id="include-sri"><span data-i18n="includeSRI"></span></label><label class="check-option"><input type="checkbox" id="include-cors"><span>crossorigin="anonymous"</span></label></div></div>
+<div id="hash-region" class="popup-region"><fieldset id="hash-field"><legend data-i18n="hashAlgorithm"></legend><div class="choice-grid hash-grid" id="hash-choices"></div></fieldset></div>
+<div class="copy-output-wrap"><textarea id="copy-output" readonly spellcheck="false" data-i18n-label="copyContent"></textarea><button class="icon-button" id="copy-confirm" data-i18n-label="copyContent"><i data-lucide="copy"></i></button></div>
+</div></div>
+<button id="back-to-top" class="back-to-top" data-i18n-label="backToTop" inert><i data-lucide="arrow-up"></i></button>
+<div id="toast" class="toast" role="status" hidden><i data-lucide="check"></i><span></span></div>
+</body>
+</html>

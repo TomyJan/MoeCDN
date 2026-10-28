@@ -1,0 +1,13 @@
+* text=auto
+*.md text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.py text eol=lf
+
+# 原型按原始字节保存，与 snapshot.json 的校验值一致。
+design/prototype/*.html -text -whitespace
+design/prototype/*.css -text -whitespace
+design/prototype/*.js -text -whitespace
+design/licenses/* -text -whitespace
