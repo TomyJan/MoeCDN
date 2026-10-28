@@ -4,8 +4,8 @@ import {
   type ServerResponse,
 } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
-import { resolve, relative, extname, sep } from 'node:path';
-import { readDirectoryPath } from '../src/lib/catalog.ts';
+import { resolve, relative, extname, isAbsolute, sep } from 'node:path';
+import { readDirectoryPath, resourceUrl } from '../src/lib/catalog.ts';
 const mime: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -76,12 +76,15 @@ export function resourceMiddleware(root: string) {
         return next();
       const file = resolve(absolute, path),
         rel = relative(absolute, file);
-      if (rel === '..' || rel.startsWith('..' + sep)) return next();
+      if (isAbsolute(rel) || rel === '..' || rel.startsWith('..' + sep))
+        return next();
       const info = await stat(file).catch(() => null);
       if (info?.isFile()) return send(file, req, res);
       if (root === 'dist') {
         if (info?.isDirectory() && !path.endsWith('/') && path) {
-          res.writeHead(308, { Location: '/' + path + '/' });
+          const target = new URL(req.url || '/', 'http://localhost');
+          target.pathname = resourceUrl(path + '/');
+          res.writeHead(308, { Location: target.pathname + target.search });
           res.end();
           return;
         }
