@@ -37,4 +37,4 @@ MoeCDN 目录程序源码采用 [MPL-2.0](https://github.com/TomyJan/MoeCDN/blob
 
 支付宝 / QQ / 微信收款码：
 
-<img src="/web-static/private/tomyjan-website/common/img/paycode.png" alt="支付宝、QQ 与微信收款码" width="280">
+<img src="https://web-static.tomys.top/paycode/img/PayCode.png" alt="支付宝、QQ 与微信收款码" width="280">

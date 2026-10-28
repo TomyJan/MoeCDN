@@ -57,6 +57,10 @@ test('当前目录 README 渲染在列表后，目录导航和原文件可用且
   await expect(readme).toContainText('2025-09-14');
   await expect(readme).toContainText('腾讯云 EdgeOne');
   await expect(readme).toContainText('Cloudflare');
+  await expect(readme.locator('img')).toHaveAttribute(
+    'src',
+    'https://web-static.tomys.top/paycode/img/PayCode.png',
+  );
   await expect(
     page
       .locator('.page-footer')

@@ -22,6 +22,18 @@ test('更新历史独立页面支持直达刷新，读取历史记录并返回�
   await expect(page.locator('#history')).toContainText('纯静态');
   await page.reload();
   await expect(page.locator('#history')).toContainText('2022-05-28');
+  expect(
+    await page
+      .locator('.history-entry')
+      .first()
+      .evaluate((entry) => {
+        const date = entry.querySelector('time')!.getBoundingClientRect();
+        const line = entry
+          .querySelector('.history-changes')!
+          .getBoundingClientRect();
+        return line.left - date.right <= 20;
+      }),
+  ).toBe(true);
   const data = await request.get('/_moecdn/history.json');
   expect(data.ok()).toBe(true);
   expect((await data.json()).at(-1).date).toBe('2022-05-28');

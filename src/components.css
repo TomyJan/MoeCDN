@@ -131,8 +131,8 @@
 }
 .history-entry {
   display: grid;
-  grid-template-columns: 105px minmax(0, 1fr);
-  column-gap: 28px;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 18px;
   padding-bottom: 28px;
 }
 .history-entry h2 {
