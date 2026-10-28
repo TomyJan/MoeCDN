@@ -267,3 +267,85 @@ test('预览中复用复制浮层并阻止待预览网页执行脚本', async ({
   await expect(page.locator('#copy-dialog')).toBeHidden();
   await page.getByRole('button', { name: '关闭', exact: true }).click();
 });
+
+test('源码开关默认开启，分别控制高亮、行号和长行换行', async ({ page }) => {
+  const source =
+    '/* 多行注释\n安全预览 */\n.example { color: red; }\n' +
+    '.long { content: "' +
+    '宽度测试 abc '.repeat(80) +
+    '"; }';
+  await page.route('**/APlayer.min.css', (route) =>
+    route.fulfill({ contentType: 'text/css', body: source }),
+  );
+  await page.goto(cssDirectory);
+  await page
+    .getByRole('button', { name: '预览文件 APlayer.min.css', exact: true })
+    .click();
+  for (const name of ['语法高亮: 开', '显示行号: 开', '自动换行: 开']) {
+    await expect(
+      page.getByRole('button', { name, exact: true }),
+    ).toHaveAttribute('aria-pressed', 'true');
+  }
+  const lines = page.locator('.code-line');
+  await expect(lines).toHaveCount(4);
+  expect(await page.locator('.line-content').allTextContents()).toEqual(
+    source.split('\n'),
+  );
+  await expect(lines.nth(1).locator('.hljs-comment')).toContainText('安全预览');
+  const line = page.locator('.line-content').last();
+  const wrapped = (await line.boundingBox())!.height;
+  await page.getByRole('button', { name: '自动换行: 开', exact: true }).click();
+  await expect
+    .poll(async () => (await line.boundingBox())!.height)
+    .toBeLessThan(wrapped);
+  await page.getByRole('button', { name: '语法高亮: 开', exact: true }).click();
+  await expect(page.locator('.code-preview [class^="hljs-"]')).toHaveCount(0);
+  await expect(page.locator('.line-number')).toHaveCount(4);
+  await page.getByRole('button', { name: '显示行号: 开', exact: true }).click();
+  await expect(page.locator('.line-number')).toHaveCount(0);
+  expect(await page.locator('.line-content').allTextContents()).toEqual(
+    source.split('\n'),
+  );
+  await page.getByRole('button', { name: '语法高亮: 关', exact: true }).click();
+  await expect(lines.nth(1).locator('.hljs-comment')).toContainText('安全预览');
+  await page.getByRole('button', { name: '关闭', exact: true }).click();
+  await expect(page.locator('#preview-dialog')).toBeHidden();
+  await page
+    .getByRole('button', { name: '预览文件 APlayer.min.css', exact: true })
+    .click();
+  await expect(
+    page.getByRole('button', { name: '显示行号: 开', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('大源码和极多行文本简化显示，保留完整正文并可关闭', async ({ page }) => {
+  await page.goto('/lib/mathjax/3.2.2/es5/');
+  await page
+    .getByRole('button', {
+      name: '预览文件 tex-chtml-full-speech.js',
+      exact: true,
+    })
+    .click();
+  await expect(
+    page.getByRole('button', { name: '语法高亮: 关', exact: true }),
+  ).toBeDisabled();
+  await expect(page.locator('.code-preview')).toContainText('MathJax');
+  await expect(page.locator('.code-preview [class^="hljs-"]')).toHaveCount(0);
+  await page.getByRole('button', { name: '关闭', exact: true }).click();
+  await expect(page.locator('#preview-dialog')).toBeHidden();
+  const text = '// 短行\n'.repeat(6000);
+  await page.route('**/APlayer.min.css', (route) =>
+    route.fulfill({ contentType: 'text/css', body: text }),
+  );
+  await page.goto(cssDirectory);
+  await page
+    .getByRole('button', { name: '预览文件 APlayer.min.css', exact: true })
+    .click();
+  await expect(
+    page.getByRole('button', { name: '显示行号: 关', exact: true }),
+  ).toBeDisabled();
+  await expect(page.locator('.code-preview')).toHaveText(text, {
+    useInnerText: false,
+  });
+  await expect(page.locator('.code-preview span')).toHaveCount(0);
+});

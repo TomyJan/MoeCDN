@@ -24,6 +24,7 @@ import { fileType, formatSize, resourceUrl } from '../lib/catalog.ts';
 import { Button, CopyButton, FileIcon } from './ui.tsx';
 
 const PdfPreview = lazy(() => import('./PdfPreview.tsx'));
+const CodePreview = lazy(() => import('./CodePreview.tsx'));
 
 function escapeAttribute(text: string) {
   return text
@@ -58,6 +59,9 @@ export function Preview({
     [encoding, setEncoding] = useState(''),
     [extra, setExtra] = useState('');
   const [fontLoaded, setFontLoaded] = useState(false);
+  const [highlight, setHighlight] = useState(true);
+  const [lineNumbers, setLineNumbers] = useState(true);
+  const [wrap, setWrap] = useState(true);
   const ext = fileType(file),
     url = resourceUrl(file.path);
   const image = /^(png|jpe?g|webp|gif|svg|ico|avif)$/.test(ext);
@@ -69,6 +73,24 @@ export function Preview({
       ext,
     ) || file.name === 'LICENSE';
   const tooLarge = (file.size || 0) > 2 * 1024 * 1024;
+  const richSource = useMemo(() => {
+    if (text === null) return true;
+    if (text.length > 200_000) return false;
+    let lines = 1;
+    let start = 0;
+    let longest = 0;
+    for (
+      let end = text.indexOf('\n');
+      end !== -1;
+      end = text.indexOf('\n', start)
+    ) {
+      if (++lines > 5000) return false;
+      longest = Math.max(longest, end - start);
+      start = end + 1;
+    }
+    longest = Math.max(longest, text.length - start);
+    return longest <= 20_000;
+  }, [text]);
   useEffect(() => {
     const abort = new AbortController();
     if (isText && !tooLarge) {
@@ -224,9 +246,20 @@ export function Preview({
       <>
         {mode !== 'render' && (
           <div className="source-pane">
-            <pre className="code-preview">
-              <code>{text}</code>
-            </pre>
+            <Suspense
+              fallback={
+                <div className="preview-loading">{t('previewLoading')}</div>
+              }
+            >
+              <CodePreview
+                text={text}
+                extension={ext}
+                highlight={highlight && richSource}
+                lineNumbers={lineNumbers && richSource}
+                wrap={wrap && richSource}
+                simple={!richSource}
+              />
+            </Suspense>
           </div>
         )}
         {mode !== 'source' && document && (
@@ -363,6 +396,47 @@ export function Preview({
               <span title={t('time')}>{timestamp}</span>
             </div>
             <div className="property-right">
+              {isText && !tooLarge && !error && (
+                <div
+                  className="source-options"
+                  role="group"
+                  aria-label={t('source')}
+                >
+                  {[
+                    {
+                      label: t('highlight'),
+                      value: highlight && richSource,
+                      available: richSource,
+                      toggle: () => setHighlight(!highlight),
+                    },
+                    {
+                      label: t('lineNumbers'),
+                      value: lineNumbers && richSource,
+                      available: richSource,
+                      toggle: () => setLineNumbers(!lineNumbers),
+                    },
+                    {
+                      label: t('wrap'),
+                      value: wrap && richSource,
+                      available: richSource,
+                      toggle: () => setWrap(!wrap),
+                    },
+                  ].map((option) => (
+                    <button
+                      key={option.label}
+                      type="button"
+                      aria-pressed={option.value}
+                      disabled={!option.available}
+                      title={
+                        !option.available ? t('simplifiedSource') : undefined
+                      }
+                      onClick={option.toggle}
+                    >
+                      {option.label}: {t(option.value ? 'on' : 'off')}
+                    </button>
+                  ))}
+                </div>
+              )}
               <span id="preview-extra">{extra}</span>
               <span>{encoding}</span>
               <span>
