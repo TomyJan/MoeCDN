@@ -83,7 +83,9 @@ export function renderReadme(text: string, path: string) {
       }
       image.setAttribute(
         'src',
-        url.origin === location.origin ? url.pathname + url.search : url.href,
+        url.origin === location.origin
+          ? url.pathname + url.search + url.hash
+          : url.href,
       );
     }
     image.removeAttribute('srcset');

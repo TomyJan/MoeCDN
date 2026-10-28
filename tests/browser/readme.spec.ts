@@ -1,5 +1,24 @@
 import { test, expect } from '@playwright/test';
 
+test('README 图片保留相对地址、查询参数及 SVG 视图片段', async ({ page }) => {
+  await page.route('**/test/README.md', (route) =>
+    route.fulfill({
+      contentType: 'text/markdown',
+      body: '![局部视图](sample.svg?theme=dark#viewBox(0,0,32,32))\n\n![外链](https://example.com/image.svg?v=1#detail)',
+    }),
+  );
+  await page.goto('/test/');
+  const images = page.locator('#directory-readme img');
+  await expect(images.first()).toHaveAttribute(
+    'src',
+    '/test/sample.svg?theme=dark#viewBox(0,0,32,32)',
+  );
+  await expect(images.last()).toHaveAttribute(
+    'src',
+    'https://example.com/image.svg?v=1#detail',
+  );
+});
+
 test('当前目录 README 渲染在列表后，目录导航和原文件可用且不进入搜索', async ({
   page,
   request,
