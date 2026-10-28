@@ -23,6 +23,7 @@ import type { Translate } from '../lib/i18n.ts';
 import { fileType, formatSize, resourceUrl } from '../lib/catalog.ts';
 import { syntaxLanguage } from '../lib/syntax.ts';
 import { Button, CopyButton, FileIcon } from './ui.tsx';
+import { PreviewBoundary } from './PreviewBoundary.tsx';
 
 const PdfPreview = lazy(() => import('./PdfPreview.tsx'));
 const CodePreview = lazy(() => import('./CodePreview.tsx'));
@@ -396,7 +397,20 @@ export function Preview({
                   : '')
             }
           >
-            {body}
+            <PreviewBoundary
+              fallback={
+                <div className="preview-unavailable" role="alert">
+                  <CodeXml />
+                  <h3>{t('loadFailed')}</h3>
+                  <p>{t('unsupportedHint')}</p>
+                  <Button variant="secondary" onClick={() => location.reload()}>
+                    {t('reload')}
+                  </Button>
+                </div>
+              }
+            >
+              {body}
+            </PreviewBoundary>
           </div>
           <footer id="preview-properties" className="preview-properties">
             <div className="property-left">
