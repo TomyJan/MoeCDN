@@ -313,7 +313,7 @@ export function App() {
               aria-label={t('home')}
               title={t('home')}
               target="_blank"
-              rel="noopener noreferrer"
+              rel="noopener"
             >
               <House />
               <span>{t('home')}</span>
@@ -324,7 +324,7 @@ export function App() {
               aria-label={t('blog')}
               title={t('blog')}
               target="_blank"
-              rel="noopener noreferrer"
+              rel="noopener"
             >
               <NotebookPen />
               <span>{t('blog')}</span>
@@ -589,7 +589,7 @@ export function App() {
               <a
                 href="https://github.com/TomyJan/MoeCDN"
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="noopener"
               >
                 MoeCDN
               </a>
@@ -603,7 +603,7 @@ export function App() {
                       catalog.revision
                     }
                     target="_blank"
-                    rel="noopener noreferrer"
+                    rel="noopener"
                   >
                     {catalog.revision.slice(0, 8)}
                   </a>
@@ -632,7 +632,7 @@ export function App() {
               <a
                 href="https://beian.miit.gov.cn/"
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="noopener"
               >
                 鲁ICP备2021003464号-1
               </a>

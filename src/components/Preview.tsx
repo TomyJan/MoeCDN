@@ -269,7 +269,6 @@ export function Preview({
           <iframe
             className="render-pane"
             sandbox=""
-            referrerPolicy="no-referrer"
             title={file.name}
             srcDoc={rendered}
           />
@@ -363,7 +362,7 @@ export function Preview({
                 className="icon-button"
                 href={url}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="noopener"
                 aria-label={t('original')}
                 title={t('original')}
               >

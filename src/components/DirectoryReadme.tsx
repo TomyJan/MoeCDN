@@ -102,11 +102,7 @@ export function DirectoryReadme({
     >
       <header className="readme-header">
         <FileText aria-hidden="true" />
-        <a
-          href={resourceUrl(file.path)}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a href={resourceUrl(file.path)} target="_blank" rel="noopener">
           {file.name}
         </a>
         {!!content?.headings.length && (

@@ -67,7 +67,7 @@ export function renderReadme(text: string, path: string) {
       );
       if (url.origin !== location.origin || !url.pathname.endsWith('/')) {
         link.target = '_blank';
-        link.rel = 'noopener noreferrer';
+        link.rel = 'noopener';
       }
     }
   }
