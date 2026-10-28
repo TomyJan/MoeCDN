@@ -6,7 +6,7 @@ export function useCompactNavigation(header: RefObject<HTMLElement | null>) {
   useLayoutEffect(() => {
     const element = header.current;
     if (!element) return;
-    const brand = element.querySelector<HTMLElement>('.brand')!;
+    const leading = element.querySelector<HTMLElement>('.top-leading')!;
     const actions = element.querySelector<HTMLElement>('.top-actions')!;
     const links = [...element.querySelectorAll<HTMLElement>('.nav-link')];
     function measure() {
@@ -30,7 +30,7 @@ export function useCompactNavigation(header: RefObject<HTMLElement | null>) {
           );
         }, 0);
       setCompact(
-        brand.getBoundingClientRect().width +
+        leading.getBoundingClientRect().width +
           fullActionsWidth +
           padding +
           parseFloat(style.columnGap) >
@@ -40,7 +40,7 @@ export function useCompactNavigation(header: RefObject<HTMLElement | null>) {
     const observer = new ResizeObserver(measure);
     [
       element,
-      brand,
+      leading,
       actions,
       ...links.map((link) => link.querySelector('span')!),
     ].forEach((node) => observer.observe(node));

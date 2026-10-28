@@ -7,7 +7,6 @@ import {
   Monitor,
   Moon,
   NotebookPen,
-  PanelLeft,
   Search,
   SearchX,
   Sun,
@@ -298,27 +297,44 @@ export function App() {
           data-compact-links={compactLinks}
           className={'topbar' + (navHidden ? ' nav-hidden' : '')}
         >
-          <a
-            className="brand"
-            href="/"
-            aria-label="MoeCDN"
-            onClick={(event) => {
-              if (
-                event.button !== 0 ||
-                event.metaKey ||
-                event.ctrlKey ||
-                event.shiftKey ||
-                event.altKey
-              )
-                return;
-              event.preventDefault();
-              navigate('');
-            }}
-          >
-            <img className="brand-icon" src="/favicon.ico" alt="" />
-            <span>MoeCDN</span>
-            <span className="domain">cdn.amoe.cc</span>
-          </a>
+          <div className="top-leading">
+            <Button
+              ref={navTrigger}
+              id="nav-toggle"
+              className="mobile-only"
+              aria-label={t('directoryNav')}
+              aria-expanded={mobileNav}
+              aria-controls={catalog ? 'sidebar' : undefined}
+              onClick={() => setMobileNav(!mobileNav)}
+            >
+              <span className="hamburger" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </span>
+            </Button>
+            <a
+              className="brand"
+              href="/"
+              aria-label="MoeCDN"
+              onClick={(event) => {
+                if (
+                  event.button !== 0 ||
+                  event.metaKey ||
+                  event.ctrlKey ||
+                  event.shiftKey ||
+                  event.altKey
+                )
+                  return;
+                event.preventDefault();
+                navigate('');
+              }}
+            >
+              <img className="brand-icon" src="/favicon.ico" alt="" />
+              <span>MoeCDN</span>
+              <span className="domain">cdn.amoe.cc</span>
+            </a>
+          </div>
           <div className="top-actions">
             <a
               className="nav-link"
@@ -342,16 +358,6 @@ export function App() {
               <NotebookPen />
               <span>{t('blog')}</span>
             </a>
-            <Button
-              ref={navTrigger}
-              id="nav-toggle"
-              className="mobile-only"
-              aria-label={t('directoryNav')}
-              aria-expanded={mobileNav}
-              onClick={() => setMobileNav(!mobileNav)}
-            >
-              <PanelLeft />
-            </Button>
             <Menu
               label={t('language')}
               value={lang}

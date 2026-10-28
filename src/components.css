@@ -222,8 +222,60 @@
   gap: 16px;
 }
 .topbar .brand,
+.topbar .top-leading,
 .topbar .top-actions {
   flex-shrink: 0;
+}
+.top-leading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#nav-toggle {
+  width: 32px;
+  min-width: 32px;
+  min-height: 44px;
+}
+.hamburger {
+  position: relative;
+  width: 24px;
+  height: 24px;
+}
+.hamburger > span {
+  position: absolute;
+  left: 3px;
+  top: 11px;
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transition:
+    transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 160ms;
+}
+.hamburger > span:first-child {
+  transform: translateY(-6px);
+}
+.hamburger > span:last-child {
+  transform: translateY(6px);
+}
+#nav-toggle[aria-expanded='true'] .hamburger > span:first-child {
+  transform: rotate(45deg);
+}
+#nav-toggle[aria-expanded='true'] .hamburger > span:nth-child(2) {
+  transform: scaleX(0);
+  opacity: 0;
+}
+#nav-toggle[aria-expanded='true'] .hamburger > span:last-child {
+  transform: rotate(-45deg);
+}
+@media (max-width: 600px) {
+  .topbar {
+    gap: 8px;
+  }
+  .top-leading {
+    gap: 6px;
+  }
 }
 .topbar .nav-link {
   position: relative;
@@ -907,6 +959,20 @@
     background: #0005;
     z-index: 70;
   }
+  .sidebar.mobile-open[data-state='open'] {
+    animation: directory-slide-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .sidebar.mobile-open[data-state='closed'] {
+    animation: directory-slide-out 190ms cubic-bezier(0.4, 0, 1, 1) both;
+    pointer-events: none;
+  }
+  .sidebar-backdrop[data-state='open'] {
+    animation: directory-fade-in 240ms ease both;
+  }
+  .sidebar-backdrop[data-state='closed'] {
+    animation: directory-fade-out 190ms ease both;
+    pointer-events: none;
+  }
   .file-name img {
     width: 21px;
     height: 21px;
@@ -933,6 +999,38 @@
   }
   .code-preview {
     padding: 16px;
+  }
+}
+@keyframes directory-slide-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes directory-slide-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+@keyframes directory-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes directory-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
   }
 }
 @media (max-width: 420px) {

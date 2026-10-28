@@ -43,6 +43,19 @@ test('移动目录抽屉限制键盘焦点，关闭后还原背景交互', async
   await page.setViewportSize({ width: 360, height: 740 });
   await page.goto('/');
   const trigger = page.locator('#nav-toggle');
+  expect(
+    await trigger.evaluate((element) => {
+      const button = element.getBoundingClientRect();
+      const logo = element
+        .closest('header')!
+        .querySelector('.brand-icon')!
+        .getBoundingClientRect();
+      return (
+        button.right <= logo.left &&
+        Math.abs((button.top + button.bottom - logo.top - logo.bottom) / 2) <= 1
+      );
+    }),
+  ).toBe(true);
   await trigger.click();
   const drawer = page.getByRole('dialog', { name: '目录导航', exact: true });
   await expect(drawer).toBeVisible();
