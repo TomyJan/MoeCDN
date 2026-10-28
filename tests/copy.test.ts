@@ -28,6 +28,18 @@ const file: Entry = {
   hashes: { sha384: { hex: '123', b64: 'YWJj' } },
 };
 const opts = { format: 'html', hash: 'sha384', sri: true, cors: true } as const;
+it.each(['a.js', 'a.css'])(
+  '仅启用 SRI 的 %s 也生成可跨站加载的标签',
+  (name) => {
+    const output = buildCopy(
+      { ...file, name, path: '库/' + name },
+      { ...opts, cors: false },
+      'https://cdn.amoe.cc',
+    );
+    expect(output).toContain('integrity="sha384-YWJj"');
+    expect(output).toContain('crossorigin="anonymous"');
+  },
+);
 it('支持脚本 SRI，但已隐藏的选项不污染直链与 Markdown', () => {
   expect(buildCopy(file, opts, 'https://cdn.amoe.cc')).toBe(
     '<script src="https://cdn.amoe.cc/%E5%BA%93/a.js" integrity="sha384-YWJj" crossorigin="anonymous"></script>',

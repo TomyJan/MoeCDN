@@ -65,10 +65,14 @@ export function AdvancedCopy({
           align="end"
           sideOffset={8}
           collisionPadding={10}
-          onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => {
             e.preventDefault();
-            target.anchor.focus();
+            if (
+              target.closing &&
+              target.anchor.isConnected &&
+              !document.querySelector('#copy-dialog[data-state="open"]')
+            )
+              target.anchor.focus({ preventScroll: true });
           }}
           onInteractOutside={(event) => {
             if ((event.target as HTMLElement).closest('[data-advanced]'))
@@ -115,7 +119,8 @@ export function AdvancedCopy({
                   <input
                     id="include-cors"
                     type="checkbox"
-                    checked={cors}
+                    checked={cors || sri}
+                    disabled={sri}
                     onChange={(e) => setCors(e.target.checked)}
                   />
                   <span>crossorigin="anonymous"</span>

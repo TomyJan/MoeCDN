@@ -31,10 +31,12 @@ export function buildCopy(file: Entry, options: CopyOptions, origin: string) {
   if (options.format === 'markdown')
     return `[${file.name.replace(/[\\[\]]/g, '\\$&')}](${url.replaceAll('(', '%28').replaceAll(')', '%29')})`;
   if (options.format !== 'html' || !copyCapabilities(file).html) return url;
+  const includeSri = supports && options.sri && digest;
   const attrs =
-    (supports && options.sri && digest
-      ? ` integrity="${options.hash}-${digest.b64}"`
-      : '') + (supports && options.cors ? ' crossorigin="anonymous"' : '');
+    (includeSri ? ` integrity="${options.hash}-${digest.b64}"` : '') +
+    (supports && (options.cors || includeSri)
+      ? ' crossorigin="anonymous"'
+      : '');
   if (script)
     return `<script${/\.mjs$/i.test(file.name) ? ' type="module"' : ''} src="${escape(url)}"${attrs}></script>`;
   if (style) return `<link rel="stylesheet" href="${escape(url)}"${attrs}>`;
