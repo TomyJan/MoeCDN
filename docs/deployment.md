@@ -53,6 +53,10 @@ HTML 与 Markdown 预览使用不授予脚本权限的 sandbox iframe，Markdown
 
 PDF 使用按需加载的 PDF.js 在 canvas 上逐页绘制，靠近视口时才渲染页面，不使用浏览器内置 PDF 插件，也不接入 PDF 脚本或交互动作。Worker、字符映射、字体和解码器均随站点发布。
 
+## 访问统计
+
+Umami 使用 `https://umami.amoe.cc/script.js`，website ID 为 `da133a13-5739-44d4-ae2d-7025ff791b9a`，配置位于根目录 `index.html`。脚本延后执行，使用其自动页面跟踪；正式统计域名限定为 `cdn.amoe.cc` 和 `cdn.vov.moe`，本地与平台预览域名不发送统计事件。新增正式域名时需同步更新 `data-domains`。
+
 ## 本地验证
 
 ```sh
