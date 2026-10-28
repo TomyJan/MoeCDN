@@ -25,6 +25,17 @@ test('当前目录 README 渲染在列表后，目录导航和原文件可用且
   await expect(
     readme.getByRole('link', { name: 'JSON', exact: true }),
   ).toHaveAttribute('href', '/test/sample.json');
+  const specialLink = readme.getByRole('link', {
+    name: '带空格的中文文件',
+    exact: true,
+  });
+  await expect(specialLink).toHaveAttribute(
+    'href',
+    '/test/%E4%B8%AD%E6%96%87%20%E7%A9%BA%E6%A0%BC%23%25.txt',
+  );
+  expect(
+    (await request.get((await specialLink.getAttribute('href'))!)).ok(),
+  ).toBe(true);
   await readme.getByRole('button', { name: '目录', exact: true }).click();
   await page.getByRole('menuitem', { name: '使用说明', exact: true }).click();
   await expect(
@@ -91,9 +102,21 @@ test('窄屏根目录 README 和含备案号的页脚完整显示', async ({ pag
     .click();
   const link = page.locator('.page-footer a').last();
   await link.scrollIntoViewIfNeeded();
-  const footer = (await page.locator('.page-footer').boundingBox())!;
-  const box = (await link.boundingBox())!;
-  expect(box.y + box.height).toBeLessThanOrEqual(footer.y + footer.height);
+  // 同帧测量，避免滚动或页面过渡使两次读取处于不同坐标系。
+  expect(
+    await page.locator('.page-footer').evaluate((footer) => {
+      const bounds = footer.getBoundingClientRect();
+      return [...footer.querySelectorAll('a')].every((link) => {
+        const box = link.getBoundingClientRect();
+        return (
+          box.top >= bounds.top &&
+          box.bottom <= bounds.bottom &&
+          box.left >= bounds.left &&
+          box.right <= bounds.right
+        );
+      });
+    }),
+  ).toBe(true);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,

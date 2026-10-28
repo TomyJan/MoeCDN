@@ -5,7 +5,7 @@
 ## 文本与代码
 
 - [纯文本](sample.txt)、[JSON](sample.json)、[HTML](sample.html)、[Markdown](sample.md)
-- [子目录](nested/)、[带空格的中文文件](中文 空格#%.txt)
+- [子目录](nested/)、[带空格的中文文件](%E4%B8%AD%E6%96%87%20%E7%A9%BA%E6%A0%BC%23%25.txt)
 
 ```js
 // 中文注释与跨行代码
