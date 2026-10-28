@@ -12,13 +12,8 @@ import {
   SearchX,
   Sun,
 } from 'lucide-react';
-import type { Catalog, Entry, Language, Sort, Theme } from './lib/types.ts';
-import {
-  formatSize,
-  readDirectoryPath,
-  resourceUrl,
-  selectEntries,
-} from './lib/catalog.ts';
+import type { Catalog, Entry, Language, Theme } from './lib/types.ts';
+import { formatSize, resourceUrl, selectEntries } from './lib/catalog.ts';
 import { translator } from './lib/i18n.ts';
 import {
   Button,
@@ -36,6 +31,7 @@ import { SortMenu } from './components/SortMenu.tsx';
 import { SearchDialog } from './components/SearchDialog.tsx';
 import { DirectoryReadme } from './components/DirectoryReadme.tsx';
 import { useCompactNavigation } from './lib/useCompactNavigation.ts';
+import { useDirectoryHistory } from './lib/useDirectoryHistory.ts';
 
 function preferences(): { lang?: Language; theme?: Theme } {
   try {
@@ -43,14 +39,6 @@ function preferences(): { lang?: Language; theme?: Theme } {
   } catch {
     return {};
   }
-}
-function currentPath() {
-  if (location.hash.startsWith('#/')) {
-    const target = location.hash.slice(1);
-    if (readDirectoryPath(target) !== null)
-      history.replaceState(null, '', target);
-  }
-  return readDirectoryPath(location.pathname);
 }
 export function App() {
   const header = useRef<HTMLElement>(null);
@@ -68,14 +56,20 @@ export function App() {
   const [systemDark, setSystemDark] = useState(
     () => matchMedia('(prefers-color-scheme: dark)').matches,
   );
-  const [path, setPath] = useState<string | null>(currentPath);
-  const [sort, setSort] = useState<Sort>('name');
+  const {
+    path,
+    setPath,
+    sort,
+    setSort,
+    limit,
+    setLimit,
+    navigate: navigateHistory,
+  } = useDirectoryHistory(Boolean(catalog));
   const [expandedDirectories, setExpandedDirectories] = useState(
     new Set<string>(),
   );
   const [searchOpen, setSearchOpen] = useState(false);
-  const [limit, setLimit] = useState(100),
-    [loadingMore, setLoadingMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [preview, setPreview] = useState<Entry | null>(null),
     [copy, setCopy] = useState<CopyTarget | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -131,9 +125,7 @@ export function App() {
   useEffect(() => {
     const pop = () => {
       direction.current = -1;
-      setPath(currentPath());
       setSearchOpen(false);
-      setLimit(100);
       setPreview(null);
       setCopy(null);
       setMobileNav(false);
@@ -212,7 +204,7 @@ export function App() {
       entries?.some((f) => f.dir && f.path === normalized));
   useEffect(() => {
     if (exists && path !== normalized && normalized !== null) {
-      history.replaceState(null, '', resourceUrl(normalized));
+      history.replaceState(history.state, '', resourceUrl(normalized));
       setPath(normalized);
     }
   }, [exists, normalized, path]);
@@ -221,7 +213,6 @@ export function App() {
     [entries, normalized, sort],
   );
   useEffect(() => {
-    setLimit(100);
     setLoadingMore(false);
   }, [path, sort]);
   useEffect(() => {
@@ -260,12 +251,9 @@ export function App() {
   function navigate(next: string) {
     if (next !== normalized) {
       direction.current = next.startsWith(normalized || '') ? 1 : -1;
-      history.pushState(null, '', resourceUrl(next));
-      setPath(next);
-      window.scrollTo({ top: 0 });
+      navigateHistory(next);
     }
     setSearchOpen(false);
-    setLimit(100);
     setPreview(null);
     setCopy(null);
     setMobileNav(false);

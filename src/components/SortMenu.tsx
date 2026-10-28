@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { DropdownMenu } from 'radix-ui';
 import {
   ArrowDownAZ,
@@ -24,6 +25,7 @@ export function SortMenu({
   onChange: (value: Sort) => void;
   t: Translate;
 }) {
+  const trigger = useRef<HTMLButtonElement>(null);
   const groups = [
     {
       label: t('name'),
@@ -64,6 +66,7 @@ export function SortMenu({
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         <button
+          ref={trigger}
           className="text-button sort-trigger"
           type="button"
           aria-label={label}
@@ -79,6 +82,10 @@ export function SortMenu({
           align="end"
           sideOffset={8}
           collisionPadding={10}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            trigger.current?.focus({ preventScroll: true });
+          }}
         >
           {groups.map((group) => (
             <DropdownMenu.Sub key={group.label}>
