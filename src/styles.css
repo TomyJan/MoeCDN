@@ -1767,12 +1767,13 @@ main {
   height: 20px;
   font-size: 15px;
   font-weight: 500;
+  line-height: 20px;
   letter-spacing: -0.5px;
+  transform: translateY(-0.5px);
 }
 .language-glyph:lang(en) {
-  font:
-    12px 'Source Code Pro',
-    monospace;
+  font-size: 12px;
+  font-weight: 400;
   letter-spacing: -1px;
 }
 .back-to-top {
