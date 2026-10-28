@@ -11,3 +11,4 @@ design/prototype/*.html -text -whitespace
 design/prototype/*.css -text -whitespace
 design/prototype/*.js -text -whitespace
 design/licenses/* -text -whitespace
+resources/** -text -whitespace

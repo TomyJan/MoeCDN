@@ -2,5 +2,10 @@ __pycache__/
 *.py[cod]
 .venv/
 node_modules/
-dist/
+/dist/
 .DS_Store
+.generated/
+test-results/
+playwright-report/
+.superpowers/
+/public/
