@@ -35,25 +35,25 @@ test('复合排序菜单按字段选择升降序并更新真实列表', async ({
   await page.getByRole('button', { name: '名称升序', exact: true }).click();
   await page.getByRole('menuitem', { name: '体积', exact: true }).focus();
   await page.keyboard.press('ArrowRight');
-  await page.getByRole('menuitemradio', { name: '升序', exact: true }).click();
+  await page.getByRole('menuitemradio', { name: '最小', exact: true }).click();
   await expect(
-    page.getByRole('button', { name: '体积升序', exact: true }),
+    page.getByRole('button', { name: '体积最小', exact: true }),
   ).toBeVisible();
   const ascending = await page.locator('#rows .file-name').allTextContents();
-  await page.getByRole('button', { name: '体积升序', exact: true }).click();
+  await page.getByRole('button', { name: '体积最小', exact: true }).click();
   await page.getByRole('menuitem', { name: '体积', exact: true }).focus();
   await page.keyboard.press('ArrowRight');
-  await page.getByRole('menuitemradio', { name: '降序', exact: true }).click();
+  await page.getByRole('menuitemradio', { name: '最大', exact: true }).click();
   await expect(page.locator('#rows .file-name')).toHaveCount(ascending.length);
   expect(await page.locator('#rows .file-name').allTextContents()).toEqual(
     [...ascending].reverse(),
   );
-  await page.getByRole('button', { name: '体积降序', exact: true }).click();
+  await page.getByRole('button', { name: '体积最大', exact: true }).click();
   await page.getByRole('menuitem', { name: '时间', exact: true }).focus();
   await page.keyboard.press('ArrowRight');
-  await page.getByRole('menuitemradio', { name: '升序', exact: true }).click();
+  await page.getByRole('menuitemradio', { name: '最旧', exact: true }).click();
   await expect(
-    page.getByRole('button', { name: '时间升序', exact: true }),
+    page.getByRole('button', { name: '时间最旧', exact: true }),
   ).toBeVisible();
 });
 
@@ -75,10 +75,10 @@ test('窄屏排序的两层菜单完整位于视口中', async ({ page }) => {
       })
       .toBeLessThanOrEqual(width);
     await page
-      .getByRole('menuitemradio', { name: '升序', exact: true })
+      .getByRole('menuitemradio', { name: '最小', exact: true })
       .click();
     await expect(
-      page.getByRole('button', { name: '体积升序', exact: true }),
+      page.getByRole('button', { name: '体积最小', exact: true }),
     ).toBeVisible();
   }
 });

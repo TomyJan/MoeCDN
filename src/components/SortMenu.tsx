@@ -27,6 +27,8 @@ export function SortMenu({
   const groups = [
     {
       label: t('name'),
+      ascLabel: t('ascending'),
+      descLabel: t('descending'),
       asc: 'name',
       desc: 'name-desc',
       ascending: <ArrowDownAZ />,
@@ -34,6 +36,8 @@ export function SortMenu({
     },
     {
       label: t('volume'),
+      ascLabel: t('smallest'),
+      descLabel: t('largest'),
       asc: 'size-asc',
       desc: 'size',
       ascending: <ArrowDownNarrowWide />,
@@ -41,6 +45,8 @@ export function SortMenu({
     },
     {
       label: t('time'),
+      ascLabel: t('oldest'),
+      descLabel: t('newest'),
       asc: 'date-asc',
       desc: 'date',
       ascending: <CalendarArrowUp />,
@@ -53,7 +59,7 @@ export function SortMenu({
   const ascending = selected.asc === value;
   const label = t('sortLabel')
     .replace('{field}', selected.label)
-    .replace('{order}', t(ascending ? 'ascending' : 'descending'));
+    .replace('{order}', ascending ? selected.ascLabel : selected.descLabel);
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -102,12 +108,12 @@ export function SortMenu({
                       [
                         {
                           value: group.asc,
-                          label: t('ascending'),
+                          label: group.ascLabel,
                           icon: <ArrowUp />,
                         },
                         {
                           value: group.desc,
-                          label: t('descending'),
+                          label: group.descLabel,
                           icon: <ArrowDown />,
                         },
                       ] as const
