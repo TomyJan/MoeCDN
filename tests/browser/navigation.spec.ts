@@ -75,11 +75,38 @@ test('切换到桌面宽度后关闭移动抽屉并恢复普通目录导航', as
   await page.goto('/');
   const trigger = page.locator('#nav-toggle');
   await trigger.click();
+  await expect(
+    page.getByRole('dialog', { name: '目录导航', exact: true }),
+  ).toBeVisible();
   await page.setViewportSize({ width: 1280, height: 900 });
   await expect(page.locator('.sidebar-backdrop')).toHaveCount(0);
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   await page.locator('#tree .tree-name').filter({ hasText: /^lib$/ }).click();
   await expect(page).toHaveURL('/lib/');
+});
+
+test('目录数据加载期间打开抽屉并切换到桌面，加载后不残留展开状态', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  let release!: () => void;
+  const response = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/_moecdn/catalog.json', async (route) => {
+    await response;
+    await route.continue();
+  });
+  await page.goto('/');
+  const trigger = page.locator('#nav-toggle');
+  await trigger.click();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  await page.setViewportSize({ width: 1280, height: 900 });
+  release();
+  await expect(page.locator('#rows')).toContainText('lib');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await page.setViewportSize({ width: 360, height: 740 });
+  await expect(page.locator('.sidebar-backdrop')).toHaveCount(0);
 });
 
 test('浏览器前进后退时收起移动目录抽屉', async ({ page }) => {

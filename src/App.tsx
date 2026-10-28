@@ -671,6 +671,7 @@ export function App() {
                 if (!open) setCopy(null);
               }}
               trigger={searchTrigger}
+              fallbackTrigger={navTrigger}
               entries={catalog.entries}
               path={isHistory ? '' : normalized || ''}
               navigate={navigate}

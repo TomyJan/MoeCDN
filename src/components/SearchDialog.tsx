@@ -26,6 +26,7 @@ export function SearchDialog({
   open,
   onOpenChange,
   trigger,
+  fallbackTrigger,
   entries,
   path,
   navigate,
@@ -37,6 +38,7 @@ export function SearchDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   trigger: RefObject<HTMLButtonElement | null>;
+  fallbackTrigger: RefObject<HTMLButtonElement | null>;
   entries: Entry[];
   path: string;
   navigate: (path: string) => void;
@@ -112,7 +114,13 @@ export function SearchDialog({
             if (!navigating.current) {
               const target = trigger.current?.isConnected
                 ? trigger.current
-                : previousFocus.current;
+                : previousFocus.current?.isConnected &&
+                    previousFocus.current !== document.body &&
+                    !previousFocus.current.closest(
+                      '[role="dialog"][data-state="closed"]',
+                    )
+                  ? previousFocus.current
+                  : fallbackTrigger.current;
               if (target?.isConnected) target.focus({ preventScroll: true });
             }
           }}

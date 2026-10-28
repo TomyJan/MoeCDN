@@ -1,6 +1,23 @@
 import { test, expect } from '@playwright/test';
 
 for (const path of ['/history/', '/missing-directory/']) {
+  test(`${path} 从移动目录打开快捷搜索，关闭后回焦目录按钮`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 360, height: 740 });
+    await page.goto(path);
+    const trigger = page.locator('#nav-toggle');
+    await trigger.click();
+    await expect(
+      page.getByRole('dialog', { name: '目录导航', exact: true }),
+    ).toBeVisible();
+    await page.keyboard.press('/');
+    await expect(page.locator('#query')).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#search-dialog')).toBeHidden();
+    await expect(trigger).toBeFocused();
+  });
+
   test(`${path} 关闭快捷搜索后恢复原焦点和滚动位置`, async ({ page }) => {
     await page.goto(path);
     await expect(page.locator('#open-search')).toHaveCount(0);

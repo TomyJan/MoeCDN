@@ -25,6 +25,7 @@ export function DirectorySidebar({
       if (!media.matches) onOpenChange(false);
     };
     media.addEventListener('change', change);
+    change();
     return () => media.removeEventListener('change', change);
   }, [onOpenChange]);
 
