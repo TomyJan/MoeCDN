@@ -1,5 +1,7 @@
 import {
+  createContext,
   forwardRef,
+  useContext,
   useEffect,
   useRef,
   useState,
@@ -14,6 +16,7 @@ import { Check, Copy } from 'lucide-react';
 import type { Translate } from '../lib/i18n.ts';
 import type { Entry } from '../lib/types.ts';
 import { iconName } from '../lib/catalog.ts';
+export const IconThemeContext = createContext<'light' | 'dark'>('light');
 const buttonVariants = cva(
   'transition-colors focus-visible:outline-2 disabled:pointer-events-none disabled:opacity-50',
   {
@@ -49,10 +52,11 @@ export function FileIcon({
   file: Entry;
   className?: string;
 }) {
+  const theme = useContext(IconThemeContext);
   return (
     <img
       className={className}
-      src={`/_moecdn/icons/${iconName(file)}.svg`}
+      src={`/_moecdn/icons/${theme === 'light' && file.iconLight ? file.iconLight : iconName(file)}.svg`}
       alt=""
       loading="lazy"
     />

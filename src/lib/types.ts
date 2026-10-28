@@ -7,6 +7,8 @@ export interface Entry {
   dir: boolean;
   size: number | null;
   modifiedAt: string;
+  icon?: string;
+  iconLight?: string;
   hashes?: Partial<Record<HashAlgorithm, Digest>>;
 }
 export interface Catalog {

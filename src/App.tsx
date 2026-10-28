@@ -24,7 +24,13 @@ import {
   selectEntries,
 } from './lib/catalog.ts';
 import { translator } from './lib/i18n.ts';
-import { Button, CopyButton, FileIcon, Menu } from './components/ui.tsx';
+import {
+  Button,
+  CopyButton,
+  FileIcon,
+  IconThemeContext,
+  Menu,
+} from './components/ui.tsx';
 import { DirectoryTree } from './components/DirectoryTree.tsx';
 import { AdvancedCopy, type CopyTarget } from './components/AdvancedCopy.tsx';
 import { Preview } from './components/Preview.tsx';
@@ -275,453 +281,466 @@ export function App() {
   const themeIcon =
     theme === 'system' ? <Monitor /> : theme === 'dark' ? <Moon /> : <Sun />;
   return (
-    <div id="app">
-      <header
-        ref={header}
-        data-compact-links={compactLinks}
-        className={'topbar' + (navHidden ? ' nav-hidden' : '')}
-      >
-        <a
-          className="brand"
-          href="/"
-          aria-label="MoeCDN"
-          onClick={(event) => {
-            event.preventDefault();
-            navigate('');
-          }}
+    <IconThemeContext.Provider value={scheme}>
+      <div id="app">
+        <header
+          ref={header}
+          data-compact-links={compactLinks}
+          className={'topbar' + (navHidden ? ' nav-hidden' : '')}
         >
-          <img className="brand-icon" src="/favicon.ico" alt="" />
-          <span>MoeCDN</span>
-          <span className="domain">cdn.amoe.cc</span>
-        </a>
-        <div className="top-actions">
           <a
-            className="nav-link"
-            href="https://vov.moe"
-            aria-label={t('home')}
-            title={t('home')}
-            target="_blank"
-            rel="noopener noreferrer"
+            className="brand"
+            href="/"
+            aria-label="MoeCDN"
+            onClick={(event) => {
+              event.preventDefault();
+              navigate('');
+            }}
           >
-            <House />
-            <span>{t('home')}</span>
+            <img className="brand-icon" src="/favicon.ico" alt="" />
+            <span>MoeCDN</span>
+            <span className="domain">cdn.amoe.cc</span>
           </a>
-          <a
-            className="nav-link"
-            href="https://blog.tomys.top"
-            aria-label={t('blog')}
-            title={t('blog')}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <NotebookPen />
-            <span>{t('blog')}</span>
-          </a>
-          <Button
-            id="nav-toggle"
-            className="mobile-only"
-            aria-label={t('directoryNav')}
-            aria-expanded={mobileNav}
-            onClick={() => setMobileNav(!mobileNav)}
-          >
-            <PanelLeft />
-          </Button>
-          <Menu
-            label={t('language')}
-            value={lang}
-            onChange={(value) => setLang(value as Language)}
-            options={[
-              { value: 'zh-CN', label: '简体中文', icon: <span>中</span> },
-              { value: 'en', label: 'English', icon: <span>EN</span> },
-            ]}
-          >
-            <span className="language-glyph">
-              {lang === 'zh-CN' ? '中' : 'EN'}
-            </span>
-          </Menu>
-          <Menu
-            label={t('appearance')}
-            value={theme}
-            onChange={(value) => setTheme(value as Theme)}
-            options={[
-              { value: 'system', label: t('system'), icon: <Monitor /> },
-              { value: 'light', label: t('light'), icon: <Sun /> },
-              { value: 'dark', label: t('dark'), icon: <Moon /> },
-            ]}
-          >
-            {themeIcon}
-          </Menu>
-        </div>
-      </header>
-      {!catalog ? (
-        <main className="app-state">
-          <Search />
-          <p>{error ? t('loadFailed') : t('loading')}</p>
-          {error && (
+          <div className="top-actions">
+            <a
+              className="nav-link"
+              href="https://vov.moe"
+              aria-label={t('home')}
+              title={t('home')}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <House />
+              <span>{t('home')}</span>
+            </a>
+            <a
+              className="nav-link"
+              href="https://blog.tomys.top"
+              aria-label={t('blog')}
+              title={t('blog')}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <NotebookPen />
+              <span>{t('blog')}</span>
+            </a>
             <Button
-              variant="secondary"
-              onClick={() => {
-                setError(false);
-                setAttempt((value) => value + 1);
-              }}
+              id="nav-toggle"
+              className="mobile-only"
+              aria-label={t('directoryNav')}
+              aria-expanded={mobileNav}
+              onClick={() => setMobileNav(!mobileNav)}
             >
-              {t('retry')}
+              <PanelLeft />
             </Button>
-          )}
-        </main>
-      ) : (
-        <>
-          <div className="layout">
-            {mobileNav && (
-              <button
-                className="sidebar-backdrop"
-                aria-label={t('close')}
-                onClick={() => setMobileNav(false)}
-              />
-            )}
-            <aside
-              id="sidebar"
-              className={'sidebar' + (mobileNav ? ' mobile-open' : '')}
+            <Menu
+              label={t('language')}
+              value={lang}
+              onChange={(value) => setLang(value as Language)}
+              options={[
+                { value: 'zh-CN', label: '简体中文', icon: <span>中</span> },
+                { value: 'en', label: 'English', icon: <span>EN</span> },
+              ]}
             >
-              <DirectoryTree
-                entries={catalog.entries}
-                path={normalized || ''}
-                navigate={navigate}
-                t={t}
-              />
-            </aside>
-            <main ref={main} className={isHistory ? 'history-main' : undefined}>
-              <nav
-                id="breadcrumbs"
-                className="breadcrumbs"
-                aria-label={t('directories')}
+              <span className="language-glyph">
+                {lang === 'zh-CN' ? '中' : 'EN'}
+              </span>
+            </Menu>
+            <Menu
+              label={t('appearance')}
+              value={theme}
+              onChange={(value) => setTheme(value as Theme)}
+              options={[
+                { value: 'system', label: t('system'), icon: <Monitor /> },
+                { value: 'light', label: t('light'), icon: <Sun /> },
+                { value: 'dark', label: t('dark'), icon: <Moon /> },
+              ]}
+            >
+              {themeIcon}
+            </Menu>
+          </div>
+        </header>
+        {!catalog ? (
+          <main className="app-state">
+            <Search />
+            <p>{error ? t('loadFailed') : t('loading')}</p>
+            {error && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setError(false);
+                  setAttempt((value) => value + 1);
+                }}
               >
-                <button aria-label={t('root')} onClick={() => navigate('')}>
-                  <House />
-                </button>
-                {segments.map((part, index) => (
-                  <span className="breadcrumb-part" key={index}>
-                    <ChevronRight />
-                    <button
-                      onClick={() =>
-                        navigate(segments.slice(0, index + 1).join('/') + '/')
-                      }
-                      aria-current={
-                        index === segments.length - 1 ? 'page' : undefined
-                      }
-                    >
-                      {isHistory ? t('history') : part}
-                    </button>
-                  </span>
-                ))}
-              </nav>
-              {!exists ? (
-                <div id="empty" className="empty-state">
-                  <SearchX />
-                  <h1>{t('notFound')}</h1>
-                  <Button variant="secondary" onClick={() => navigate('')}>
-                    {t('backRoot')}
-                  </Button>
-                </div>
-              ) : isHistory ? (
-                <HistoryPage t={t} />
-              ) : (
-                <>
-                  <div className="heading">
-                    <div className="heading-main">
-                      {normalized && (
-                        <FileIcon
-                          file={{
-                            name: '',
-                            path: normalized,
-                            parent: '',
-                            dir: true,
-                            size: null,
-                            modifiedAt: '',
+                {t('retry')}
+              </Button>
+            )}
+          </main>
+        ) : (
+          <>
+            <div className="layout">
+              {mobileNav && (
+                <button
+                  className="sidebar-backdrop"
+                  aria-label={t('close')}
+                  onClick={() => setMobileNav(false)}
+                />
+              )}
+              <aside
+                id="sidebar"
+                className={'sidebar' + (mobileNav ? ' mobile-open' : '')}
+              >
+                <DirectoryTree
+                  entries={catalog.entries}
+                  path={normalized || ''}
+                  navigate={navigate}
+                  t={t}
+                />
+              </aside>
+              <main
+                ref={main}
+                className={isHistory ? 'history-main' : undefined}
+              >
+                <nav
+                  id="breadcrumbs"
+                  className="breadcrumbs"
+                  aria-label={t('directories')}
+                >
+                  <button aria-label={t('root')} onClick={() => navigate('')}>
+                    <House />
+                  </button>
+                  {segments.map((part, index) => (
+                    <span className="breadcrumb-part" key={index}>
+                      <ChevronRight />
+                      <button
+                        onClick={() =>
+                          navigate(segments.slice(0, index + 1).join('/') + '/')
+                        }
+                        aria-current={
+                          index === segments.length - 1 ? 'page' : undefined
+                        }
+                      >
+                        {isHistory ? t('history') : part}
+                      </button>
+                    </span>
+                  ))}
+                </nav>
+                {!exists ? (
+                  <div id="empty" className="empty-state">
+                    <SearchX />
+                    <h1>{t('notFound')}</h1>
+                    <Button variant="secondary" onClick={() => navigate('')}>
+                      {t('backRoot')}
+                    </Button>
+                  </div>
+                ) : isHistory ? (
+                  <HistoryPage t={t} />
+                ) : (
+                  <>
+                    <div className="heading">
+                      <div className="heading-main">
+                        {normalized && (
+                          <FileIcon
+                            file={{
+                              name: '',
+                              path: normalized,
+                              parent: '',
+                              dir: true,
+                              size: null,
+                              modifiedAt: '',
+                            }}
+                          />
+                        )}
+                        <div>
+                          <h1 id="title">{segments.at(-1) || t('allFiles')}</h1>
+                        </div>
+                      </div>
+                      <CopyButton
+                        id="copy-directory"
+                        t={t}
+                        label={t('copyDirectory')}
+                        value={
+                          new URL(
+                            resourceUrl(normalized || ''),
+                            location.origin,
+                          ).href
+                        }
+                      />
+                    </div>
+                    <div className="searchbox" role="search">
+                      <Search aria-hidden="true" />
+                      <input
+                        ref={search}
+                        type="search"
+                        id="query"
+                        aria-label={t('search')}
+                        placeholder={t('search')}
+                        value={query}
+                        onChange={(event) => setQuery(event.target.value)}
+                        autoComplete="off"
+                      />
+                      <kbd>/</kbd>
+                      {query && (
+                        <Button
+                          id="clear-search"
+                          aria-label={t('clear')}
+                          onClick={() => {
+                            setQuery('');
+                            search.current?.focus();
                           }}
-                        />
+                        >
+                          <X />
+                        </Button>
                       )}
-                      <div>
-                        <h1 id="title">{segments.at(-1) || t('allFiles')}</h1>
+                      <div className="scope-picker">
+                        <Menu
+                          label={t(scope)}
+                          value={scope}
+                          className="text-button"
+                          onChange={(value) =>
+                            setScope(value as 'current' | 'global')
+                          }
+                          options={[
+                            {
+                              value: 'current',
+                              label: t('current'),
+                              icon: <FolderSearch />,
+                            },
+                            {
+                              value: 'global',
+                              label: t('global'),
+                              icon: <Globe />,
+                            },
+                          ]}
+                        >
+                          <span>{t(scope)}</span>
+                          <ChevronDown
+                            className="menu-chevron"
+                            aria-hidden="true"
+                          />
+                        </Menu>
                       </div>
                     </div>
-                    <CopyButton
-                      id="copy-directory"
-                      t={t}
-                      label={t('copyDirectory')}
-                      value={
-                        new URL(resourceUrl(normalized || ''), location.origin)
-                          .href
-                      }
-                    />
-                  </div>
-                  <div className="searchbox" role="search">
-                    <Search aria-hidden="true" />
-                    <input
-                      ref={search}
-                      type="search"
-                      id="query"
-                      aria-label={t('search')}
-                      placeholder={t('search')}
-                      value={query}
-                      onChange={(event) => setQuery(event.target.value)}
-                      autoComplete="off"
-                    />
-                    <kbd>/</kbd>
-                    {query && (
-                      <Button
-                        id="clear-search"
-                        aria-label={t('clear')}
-                        onClick={() => {
-                          setQuery('');
-                          search.current?.focus();
-                        }}
-                      >
-                        <X />
-                      </Button>
-                    )}
-                    <div className="scope-picker">
-                      <Menu
-                        label={t(scope)}
-                        value={scope}
-                        className="text-button"
-                        onChange={(value) =>
-                          setScope(value as 'current' | 'global')
-                        }
-                        options={[
-                          {
-                            value: 'current',
-                            label: t('current'),
-                            icon: <FolderSearch />,
-                          },
-                          {
-                            value: 'global',
-                            label: t('global'),
-                            icon: <Globe />,
-                          },
-                        ]}
-                      >
-                        <span>{t(scope)}</span>
-                        <ChevronDown
-                          className="menu-chevron"
-                          aria-hidden="true"
-                        />
-                      </Menu>
+                    <div className="list-toolbar">
+                      <div id="result-count" aria-live="polite" hidden={!stats}>
+                        {stats}
+                      </div>
+                      <SortMenu value={sort} onChange={setSort} t={t} />
                     </div>
-                  </div>
-                  <div className="list-toolbar">
-                    <div id="result-count" aria-live="polite" hidden={!stats}>
-                      {stats}
-                    </div>
-                    <SortMenu value={sort} onChange={setSort} t={t} />
-                  </div>
-                  <table className="file-table">
-                    <thead>
-                      <tr>
-                        <th scope="col">{t('name')}</th>
-                        <th scope="col" className="size-column">
-                          {t('size')}
-                        </th>
-                        <th scope="col" className="date-column">
-                          {t('time')}
-                        </th>
-                        <th scope="col" className="action-column">
-                          {t('actions')}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody id="rows">
-                      {visible.slice(0, limit).map((file) => (
-                        <tr key={file.path}>
-                          <td>
-                            <button
-                              className="file-name"
-                              data-file={file.path}
-                              aria-label={`${file.dir ? t('openFolder') : t('previewFile')} ${file.name}`}
-                              onClick={() => {
-                                if (file.dir) navigate(file.path);
-                                else {
-                                  setCopy(null);
-                                  setPreview(file);
-                                  setPreviewOpen(true);
-                                }
-                              }}
-                            >
-                              <FileIcon file={file} />
-                              <span className="file-label">
-                                <span>{file.name}</span>
-                                {query && (
-                                  <small className="search-path">
-                                    {file.parent || '/'}
-                                  </small>
-                                )}
-                              </span>
-                            </button>
-                          </td>
-                          <td className="size-column">
-                            {formatSize(file.size)}
-                          </td>
-                          <td className="date-column">
-                            {file.modifiedAt.slice(0, 10) || '—'}
-                          </td>
-                          <td className="action-column">
-                            <div className="row-actions">
-                              <CopyButton
-                                t={t}
-                                label={
-                                  file.dir ? t('copyDirectory') : t('copyLink')
-                                }
-                                value={
-                                  new URL(
-                                    resourceUrl(file.path),
-                                    location.origin,
-                                  ).href
-                                }
-                              />
-                              {!file.dir && (
-                                <Button
-                                  data-advanced={file.path}
-                                  aria-label={t('advanced')}
-                                  title={t('advanced')}
-                                  onClick={(event) => advanced(file, event)}
-                                >
-                                  <CodeXml />
-                                </Button>
-                              )}
-                            </div>
-                          </td>
+                    <table className="file-table">
+                      <thead>
+                        <tr>
+                          <th scope="col">{t('name')}</th>
+                          <th scope="col" className="size-column">
+                            {t('size')}
+                          </th>
+                          <th scope="col" className="date-column">
+                            {t('time')}
+                          </th>
+                          <th scope="col" className="action-column">
+                            {t('actions')}
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {!visible.length && (
-                    <div id="empty" className="empty-state">
-                      <SearchX />
-                      <h2>{query ? t('noResults') : t('empty')}</h2>
-                      {query && (
-                        <>
-                          <p>{t('noResultsHint')}</p>
-                          {scope !== 'global' && (
-                            <Button
-                              variant="secondary"
-                              onClick={() => setScope('global')}
-                            >
-                              {t('searchGlobal')}
-                            </Button>
-                          )}
-                        </>
-                      )}
+                      </thead>
+                      <tbody id="rows">
+                        {visible.slice(0, limit).map((file) => (
+                          <tr key={file.path}>
+                            <td>
+                              <button
+                                className="file-name"
+                                data-file={file.path}
+                                aria-label={`${file.dir ? t('openFolder') : t('previewFile')} ${file.name}`}
+                                onClick={() => {
+                                  if (file.dir) navigate(file.path);
+                                  else {
+                                    setCopy(null);
+                                    setPreview(file);
+                                    setPreviewOpen(true);
+                                  }
+                                }}
+                              >
+                                <FileIcon file={file} />
+                                <span className="file-label">
+                                  <span>{file.name}</span>
+                                  {query && (
+                                    <small className="search-path">
+                                      {file.parent || '/'}
+                                    </small>
+                                  )}
+                                </span>
+                              </button>
+                            </td>
+                            <td className="size-column">
+                              {formatSize(file.size)}
+                            </td>
+                            <td className="date-column">
+                              {file.modifiedAt.slice(0, 10) || '—'}
+                            </td>
+                            <td className="action-column">
+                              <div className="row-actions">
+                                <CopyButton
+                                  t={t}
+                                  label={
+                                    file.dir
+                                      ? t('copyDirectory')
+                                      : t('copyLink')
+                                  }
+                                  value={
+                                    new URL(
+                                      resourceUrl(file.path),
+                                      location.origin,
+                                    ).href
+                                  }
+                                />
+                                {!file.dir && (
+                                  <Button
+                                    data-advanced={file.path}
+                                    aria-label={t('advanced')}
+                                    title={t('advanced')}
+                                    onClick={(event) => advanced(file, event)}
+                                  >
+                                    <CodeXml />
+                                  </Button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {!visible.length && (
+                      <div id="empty" className="empty-state">
+                        <SearchX />
+                        <h2>{query ? t('noResults') : t('empty')}</h2>
+                        {query && (
+                          <>
+                            <p>{t('noResultsHint')}</p>
+                            {scope !== 'global' && (
+                              <Button
+                                variant="secondary"
+                                onClick={() => setScope('global')}
+                              >
+                                {t('searchGlobal')}
+                              </Button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+                    <div className="list-footer">
+                      <span
+                        id="load-status"
+                        role="status"
+                        hidden={!loadingMore}
+                      >
+                        {t('loading')}
+                      </span>
                     </div>
-                  )}
-                  <div className="list-footer">
-                    <span id="load-status" role="status" hidden={!loadingMore}>
-                      {t('loading')}
-                    </span>
-                  </div>
-                  <div id="load-sentinel" ref={sentinel} aria-hidden="true" />
-                  {!query.trim() && readme && (
-                    <DirectoryReadme
-                      key={readme.path}
-                      file={readme}
-                      navigate={navigate}
-                      t={t}
-                    />
-                  )}
+                    <div id="load-sentinel" ref={sentinel} aria-hidden="true" />
+                    {!query.trim() && readme && (
+                      <DirectoryReadme
+                        key={readme.path}
+                        file={readme}
+                        navigate={navigate}
+                        t={t}
+                      />
+                    )}
+                  </>
+                )}
+              </main>
+            </div>
+            <footer className="page-footer">
+              <a
+                href="https://github.com/TomyJan/MoeCDN"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                MoeCDN
+              </a>
+              {catalog.revision && (
+                <>
+                  {' '}
+                  <a
+                    className="commit-link"
+                    href={
+                      'https://github.com/TomyJan/MoeCDN/commit/' +
+                      catalog.revision
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {catalog.revision.slice(0, 8)}
+                  </a>
                 </>
               )}
-            </main>
-          </div>
-          <footer className="page-footer">
-            <a
-              href="https://github.com/TomyJan/MoeCDN"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              MoeCDN
-            </a>
-            {catalog.revision && (
-              <>
-                {' '}
-                <a
-                  className="commit-link"
-                  href={
-                    'https://github.com/TomyJan/MoeCDN/commit/' +
-                    catalog.revision
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {catalog.revision.slice(0, 8)}
-                </a>
-              </>
-            )}
-            {' | '}
-            <a
-              href="/history/"
-              aria-current={isHistory ? 'page' : undefined}
-              onClick={(event) => {
-                if (
-                  event.button !== 0 ||
-                  event.metaKey ||
-                  event.ctrlKey ||
-                  event.shiftKey ||
-                  event.altKey
-                )
-                  return;
-                event.preventDefault();
-                navigate('history/');
-              }}
-            >
-              {t('history')}
-            </a>
-            {' | '}
-            <a
-              href="https://beian.miit.gov.cn/"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              鲁ICP备2021003464号-1
-            </a>
-          </footer>
-        </>
-      )}
-      {preview && (
-        <Preview
-          key={preview.path}
-          file={preview}
-          open={previewOpen}
-          t={t}
-          lang={lang}
-          theme={scheme}
-          close={() => {
-            setPreviewOpen(false);
-            setCopy(null);
-          }}
-          advanced={advanced}
+              {' | '}
+              <a
+                href="/history/"
+                aria-current={isHistory ? 'page' : undefined}
+                onClick={(event) => {
+                  if (
+                    event.button !== 0 ||
+                    event.metaKey ||
+                    event.ctrlKey ||
+                    event.shiftKey ||
+                    event.altKey
+                  )
+                    return;
+                  event.preventDefault();
+                  navigate('history/');
+                }}
+              >
+                {t('history')}
+              </a>
+              {' | '}
+              <a
+                href="https://beian.miit.gov.cn/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                鲁ICP备2021003464号-1
+              </a>
+            </footer>
+          </>
+        )}
+        {preview && (
+          <Preview
+            key={preview.path}
+            file={preview}
+            open={previewOpen}
+            t={t}
+            lang={lang}
+            theme={scheme}
+            close={() => {
+              setPreviewOpen(false);
+              setCopy(null);
+            }}
+            advanced={advanced}
+          >
+            {popupInPreview && popup}
+          </Preview>
+        )}
+        {!popupInPreview && popup}
+        <Button
+          id="back-to-top"
+          className={'back-to-top' + (backTop ? ' visible' : '')}
+          aria-label={t('backTop')}
+          inert={!backTop}
+          onClick={() =>
+            window.scrollTo({
+              top: 0,
+              behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
+                ? 'instant'
+                : 'smooth',
+            })
+          }
         >
-          {popupInPreview && popup}
-        </Preview>
-      )}
-      {!popupInPreview && popup}
-      <Button
-        id="back-to-top"
-        className={'back-to-top' + (backTop ? ' visible' : '')}
-        aria-label={t('backTop')}
-        inert={!backTop}
-        onClick={() =>
-          window.scrollTo({
-            top: 0,
-            behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
-              ? 'instant'
-              : 'smooth',
-          })
-        }
-      >
-        <ArrowUp />
-      </Button>
-      <span className="sr-only" aria-live="polite">
-        {catalog ? '' : t('loading')}
-      </span>
-    </div>
+          <ArrowUp />
+        </Button>
+        <span className="sr-only" aria-live="polite">
+          {catalog ? '' : t('loading')}
+        </span>
+      </div>
+    </IconThemeContext.Provider>
   );
 }

@@ -2,18 +2,7 @@ import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { createIndex } from './indexer.ts';
 import type { Catalog, Entry } from '../src/lib/types.ts';
-export const icons = [
-  'folder-base',
-  'javascript',
-  'css',
-  'html',
-  'image',
-  'markdown',
-  'pdf',
-  'font',
-  'json',
-  'document',
-];
+import { resolveFileIcons } from './icons.ts';
 export async function prepare(): Promise<Catalog> {
   const metadata: Record<string, { sha256: string; modifiedAt?: string }> =
     JSON.parse(
@@ -65,6 +54,13 @@ export async function prepare(): Promise<Catalog> {
     files.sort(
       (a, b) => Number(b.name === 'README.md') - Number(a.name === 'README.md'),
     );
+  const icons = new Set(['folder-base', 'document']);
+  for (const file of [...entries, ...Object.values(readmes).flat()]) {
+    if (file.dir) continue;
+    Object.assign(file, resolveFileIcons(file.name));
+    icons.add(file.icon!);
+    if (file.iconLight) icons.add(file.iconLight);
+  }
   const catalog = {
     entries,
     readmes,
@@ -76,7 +72,7 @@ export async function prepare(): Promise<Catalog> {
   await cp('data/history.json', 'public/_moecdn/history.json');
   await writeFile('public/_moecdn/catalog.json', JSON.stringify(catalog));
   await Promise.all(
-    icons.map((name) =>
+    [...icons].map((name) =>
       cp(
         `node_modules/material-icon-theme/icons/${name}.svg`,
         `public/_moecdn/icons/${name}.svg`,

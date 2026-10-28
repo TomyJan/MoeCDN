@@ -53,22 +53,7 @@ export function fileType(f: Entry) {
 }
 export function iconName(f: Entry) {
   if (f.dir) return 'folder-base';
-  const ext = fileType(f);
-  if (/^(m?js|cjs|jsx|ts|tsx)$/.test(ext)) return 'javascript';
-  if (/^(png|jpe?g|svg|gif|webp|avif|ico)$/.test(ext)) return 'image';
-  if (/^(woff2?|ttf|otf)$/.test(ext)) return 'font';
-  return (
-    (
-      {
-        css: 'css',
-        html: 'html',
-        htm: 'html',
-        md: 'markdown',
-        pdf: 'pdf',
-        json: 'json',
-      } as Record<string, string>
-    )[ext] || 'document'
-  );
+  return f.icon || 'document';
 }
 export function formatSize(n: number | null) {
   if (n === null) return '—';
