@@ -42,6 +42,7 @@ export function Preview({
   theme,
   lang,
   children,
+  restoreFocus,
 }: {
   file: Entry;
   open: boolean;
@@ -51,6 +52,7 @@ export function Preview({
   theme: string;
   lang: string;
   children?: React.ReactNode;
+  restoreFocus?: () => void;
 }) {
   const [mode, setMode] = useState<'source' | 'render' | 'split'>(
     /^(html?|md)$/.test(fileType(file)) ? 'render' : 'source',
@@ -300,6 +302,12 @@ export function Preview({
           id="preview-dialog"
           className="preview-dialog radix-preview"
           aria-describedby={undefined}
+          onCloseAutoFocus={(event) => {
+            if (restoreFocus) {
+              event.preventDefault();
+              restoreFocus();
+            }
+          }}
         >
           <header className="preview-header">
             <div className="preview-filename">

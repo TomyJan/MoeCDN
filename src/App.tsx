@@ -1,11 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import {
   ArrowUp,
-  ChevronDown,
   ChevronRight,
   CodeXml,
-  FolderSearch,
-  Globe,
   House,
   Monitor,
   Moon,
@@ -14,7 +11,6 @@ import {
   Search,
   SearchX,
   Sun,
-  X,
 } from 'lucide-react';
 import type { Catalog, Entry, Language, Sort, Theme } from './lib/types.ts';
 import {
@@ -36,6 +32,7 @@ import { AdvancedCopy, type CopyTarget } from './components/AdvancedCopy.tsx';
 import { Preview } from './components/Preview.tsx';
 import { HistoryPage } from './components/HistoryPage.tsx';
 import { SortMenu } from './components/SortMenu.tsx';
+import { SearchDialog } from './components/SearchDialog.tsx';
 import { DirectoryReadme } from './components/DirectoryReadme.tsx';
 import { useCompactNavigation } from './lib/useCompactNavigation.ts';
 
@@ -71,9 +68,8 @@ export function App() {
     () => matchMedia('(prefers-color-scheme: dark)').matches,
   );
   const [path, setPath] = useState<string | null>(currentPath);
-  const [query, setQuery] = useState(''),
-    [scope, setScope] = useState<'current' | 'global'>('current'),
-    [sort, setSort] = useState<Sort>('name');
+  const [sort, setSort] = useState<Sort>('name');
+  const [searchOpen, setSearchOpen] = useState(false);
   const [limit, setLimit] = useState(100),
     [loadingMore, setLoadingMore] = useState(false);
   const [preview, setPreview] = useState<Entry | null>(null),
@@ -85,7 +81,8 @@ export function App() {
   const serial = useRef(0),
     sentinel = useRef<HTMLDivElement>(null),
     main = useRef<HTMLElement>(null),
-    search = useRef<HTMLInputElement>(null),
+    searchTrigger = useRef<HTMLButtonElement>(null),
+    previewTrigger = useRef<HTMLButtonElement | null>(null),
     direction = useRef(1);
   const t = translator(lang),
     entries = catalog?.entries;
@@ -130,7 +127,7 @@ export function App() {
     const pop = () => {
       direction.current = -1;
       setPath(currentPath());
-      setQuery('');
+      setSearchOpen(false);
       setLimit(100);
       setPreview(null);
       setCopy(null);
@@ -168,12 +165,19 @@ export function App() {
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
       if (
-        event.key === '/' &&
+        (event.key === '/' ||
+          ((event.ctrlKey || event.metaKey) &&
+            event.key.toLowerCase() === 'k')) &&
         !preview &&
-        !['INPUT', 'TEXTAREA'].includes((event.target as HTMLElement).tagName)
+        !['INPUT', 'TEXTAREA', 'SELECT'].includes(
+          (event.target as HTMLElement).tagName,
+        ) &&
+        !(event.target as HTMLElement).isContentEditable
       ) {
         event.preventDefault();
-        search.current?.focus();
+        setSearchOpen(true);
+        setCopy(null);
+        setMobileNav(false);
       }
       if (event.key === 'Escape') setMobileNav(false);
     };
@@ -196,13 +200,13 @@ export function App() {
     }
   }, [exists, normalized, path]);
   const visible = useMemo(
-    () => selectEntries(entries || [], normalized || '', query, scope, sort),
-    [entries, normalized, query, scope, sort],
+    () => selectEntries(entries || [], normalized || '', '', 'current', sort),
+    [entries, normalized, sort],
   );
   useEffect(() => {
     setLimit(100);
     setLoadingMore(false);
-  }, [path, query, scope, sort]);
+  }, [path, sort]);
   useEffect(() => {
     if (!main.current || matchMedia('(prefers-reduced-motion: reduce)').matches)
       return;
@@ -235,7 +239,7 @@ export function App() {
       observer.disconnect();
       clearTimeout(timeout);
     };
-  }, [visible.length, limit, path, query, scope, sort]);
+  }, [visible.length, limit, path, sort]);
   function navigate(next: string) {
     if (next !== normalized) {
       direction.current = next.startsWith(normalized || '') ? 1 : -1;
@@ -243,7 +247,7 @@ export function App() {
       setPath(next);
       window.scrollTo({ top: 0 });
     }
-    setQuery('');
+    setSearchOpen(false);
     setLimit(100);
     setPreview(null);
     setCopy(null);
@@ -278,6 +282,7 @@ export function App() {
     />
   ) : null;
   const popupInPreview = Boolean(copy?.anchor.closest('#preview-dialog'));
+  const popupInSearch = Boolean(copy?.anchor.closest('#search-dialog'));
   const themeIcon =
     theme === 'system' ? <Monitor /> : theme === 'dark' ? <Moon /> : <Sun />;
   return (
@@ -455,71 +460,18 @@ export function App() {
                           <h1 id="title">{segments.at(-1) || t('allFiles')}</h1>
                         </div>
                       </div>
-                      <CopyButton
-                        id="copy-directory"
-                        t={t}
-                        label={t('copyDirectory')}
-                        value={
-                          new URL(
-                            resourceUrl(normalized || ''),
-                            location.origin,
-                          ).href
-                        }
-                      />
-                    </div>
-                    <div className="searchbox" role="search">
-                      <Search aria-hidden="true" />
-                      <input
-                        ref={search}
-                        type="search"
-                        id="query"
-                        aria-label={t('search')}
-                        placeholder={t('search')}
-                        value={query}
-                        onChange={(event) => setQuery(event.target.value)}
-                        autoComplete="off"
-                      />
-                      <kbd>/</kbd>
-                      {query && (
-                        <Button
-                          id="clear-search"
-                          aria-label={t('clear')}
-                          onClick={() => {
-                            setQuery('');
-                            search.current?.focus();
-                          }}
-                        >
-                          <X />
-                        </Button>
-                      )}
-                      <div className="scope-picker">
-                        <Menu
-                          label={t(scope)}
-                          value={scope}
-                          className="text-button"
-                          onChange={(value) =>
-                            setScope(value as 'current' | 'global')
-                          }
-                          options={[
-                            {
-                              value: 'current',
-                              label: t('current'),
-                              icon: <FolderSearch />,
-                            },
-                            {
-                              value: 'global',
-                              label: t('global'),
-                              icon: <Globe />,
-                            },
-                          ]}
-                        >
-                          <span>{t(scope)}</span>
-                          <ChevronDown
-                            className="menu-chevron"
-                            aria-hidden="true"
-                          />
-                        </Menu>
-                      </div>
+                      <Button
+                        ref={searchTrigger}
+                        id="open-search"
+                        aria-label={t('searchTitle')}
+                        title={t('searchTitle')}
+                        onClick={() => {
+                          setCopy(null);
+                          setSearchOpen(true);
+                        }}
+                      >
+                        <Search />
+                      </Button>
                     </div>
                     <div className="list-toolbar">
                       <div id="result-count" aria-live="polite" hidden={!stats}>
@@ -550,9 +502,11 @@ export function App() {
                                 className="file-name"
                                 data-file={file.path}
                                 aria-label={`${file.dir ? t('openFolder') : t('previewFile')} ${file.name}`}
-                                onClick={() => {
+                                onClick={(event) => {
                                   if (file.dir) navigate(file.path);
                                   else {
+                                    previewTrigger.current =
+                                      event.currentTarget;
                                     setCopy(null);
                                     setPreview(file);
                                     setPreviewOpen(true);
@@ -562,11 +516,6 @@ export function App() {
                                 <FileIcon file={file} />
                                 <span className="file-label">
                                   <span>{file.name}</span>
-                                  {query && (
-                                    <small className="search-path">
-                                      {file.parent || '/'}
-                                    </small>
-                                  )}
                                 </span>
                               </button>
                             </td>
@@ -611,20 +560,7 @@ export function App() {
                     {!visible.length && (
                       <div id="empty" className="empty-state">
                         <SearchX />
-                        <h2>{query ? t('noResults') : t('empty')}</h2>
-                        {query && (
-                          <>
-                            <p>{t('noResultsHint')}</p>
-                            {scope !== 'global' && (
-                              <Button
-                                variant="secondary"
-                                onClick={() => setScope('global')}
-                              >
-                                {t('searchGlobal')}
-                              </Button>
-                            )}
-                          </>
-                        )}
+                        <h2>{t('empty')}</h2>
                       </div>
                     )}
                     <div className="list-footer">
@@ -637,7 +573,7 @@ export function App() {
                       </span>
                     </div>
                     <div id="load-sentinel" ref={sentinel} aria-hidden="true" />
-                    {!query.trim() && readme && (
+                    {readme && (
                       <DirectoryReadme
                         key={readme.path}
                         file={readme}
@@ -701,6 +637,28 @@ export function App() {
                 鲁ICP备2021003464号-1
               </a>
             </footer>
+            <SearchDialog
+              key={normalized}
+              open={searchOpen}
+              onOpenChange={(open) => {
+                setSearchOpen(open);
+                if (!open) setCopy(null);
+              }}
+              trigger={searchTrigger}
+              entries={catalog.entries}
+              path={isHistory ? '' : normalized || ''}
+              navigate={navigate}
+              preview={(file, anchor) => {
+                previewTrigger.current = anchor;
+                setCopy(null);
+                setPreview(file);
+                setPreviewOpen(true);
+              }}
+              advanced={advanced}
+              t={t}
+            >
+              {popupInSearch && popup}
+            </SearchDialog>
           </>
         )}
         {preview && (
@@ -711,6 +669,11 @@ export function App() {
             t={t}
             lang={lang}
             theme={scheme}
+            restoreFocus={() => {
+              if (previewTrigger.current?.isConnected)
+                previewTrigger.current.focus();
+              else searchTrigger.current?.focus();
+            }}
             close={() => {
               setPreviewOpen(false);
               setCopy(null);
@@ -720,7 +683,7 @@ export function App() {
             {popupInPreview && popup}
           </Preview>
         )}
-        {!popupInPreview && popup}
+        {!popupInPreview && !popupInSearch && popup}
         <Button
           id="back-to-top"
           className={'back-to-top' + (backTop ? ' visible' : '')}

@@ -1,8 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('稍微下滚即可回顶，回到顶部后按钮消失', async ({ page }) => {
-  await page.goto('/lib/');
-  await page.locator('#query').fill('.js');
+  await page.goto('/lib/ace/1.5.1/');
   await expect(page.locator('#rows tr')).toHaveCount(100);
   await page.evaluate(() => window.scrollTo(0, 110));
   const back = page.getByRole('button', { name: '回到顶部', exact: true });

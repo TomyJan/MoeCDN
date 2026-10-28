@@ -47,7 +47,8 @@ export function AdvancedCopy({
       : []),
   ];
   const container =
-    target.anchor.closest<HTMLElement>('#preview-dialog') || document.body;
+    target.anchor.closest<HTMLElement>('#preview-dialog, #search-dialog') ||
+    document.body;
   return (
     <Popover.Root
       open={!target.closing}

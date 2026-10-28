@@ -143,14 +143,20 @@ test('真实路径直达、刷新、前进后退与原始 index.html 共存', as
 
 test('递归搜索、范围切换、空状态与目录树', async ({ page }) => {
   await page.goto('/lib/jquery/');
+  await page.getByRole('button', { name: '搜索', exact: true }).click();
   await page.locator('#query').fill('jquery.js');
-  await expect(page.locator('#rows tr')).not.toHaveCount(0);
-  await expect(page.locator('#rows')).toContainText('3.6.0');
+  await expect(page.locator('.search-result')).not.toHaveCount(0);
+  await expect(page.locator('#search-results')).toContainText('3.6.0');
   await page.locator('#query').fill('APlayer.min.css');
-  await expect(page.locator('#empty')).toBeVisible();
+  await expect(page.locator('#search-empty')).toBeVisible();
   await page.getByRole('button', { name: '当前目录', exact: true }).click();
   await page.getByRole('menuitemradio', { name: '全站', exact: true }).click();
-  await expect(page.locator('#rows')).toContainText('APlayer.min.css');
+  await expect(page.locator('#search-results')).toContainText(
+    'APlayer.min.css',
+  );
+  await expect(page.getByRole('menu')).toBeHidden();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#search-dialog')).toBeHidden();
   await expect(
     page.getByRole('button', { name: '收起 lib', exact: true }),
   ).toHaveAttribute('aria-expanded', 'true');
@@ -243,8 +249,7 @@ test('语言主题切换和窄屏无溢出', async ({ page }) => {
 });
 
 test('接近底部自动加载，不显示手动按钮', async ({ page }) => {
-  await page.goto('/lib/');
-  await page.locator('#query').fill('.js');
+  await page.goto('/lib/ace/1.5.1/');
   await expect(page.locator('#rows tr')).toHaveCount(100);
   await page.locator('#load-sentinel').scrollIntoViewIfNeeded();
   await expect

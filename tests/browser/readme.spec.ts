@@ -48,9 +48,12 @@ test('当前目录 README 渲染在列表后，目录导航和原文件可用且
     readme.getByRole('heading', { name: '子目录说明', exact: true }),
   ).toBeVisible();
   await expect(readme).not.toContainText('这里集中放置');
+  await page.getByRole('button', { name: '搜索', exact: true }).click();
   await page.locator('#query').fill('readme.md');
-  await expect(page.locator('#empty')).toBeVisible();
-  await expect(readme).toHaveCount(0);
+  await expect(page.locator('#search-empty')).toBeVisible();
+  await expect(page.locator('#search-results')).not.toContainText('README.md');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#search-dialog')).toBeHidden();
   await page.goto('/');
   await expect(readme).toContainText('2026-10-28');
   await expect(readme).toContainText('恢复公开服务');
