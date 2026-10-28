@@ -2,6 +2,7 @@ import {
   lazy,
   Suspense,
   useEffect,
+  useCallback,
   useMemo,
   useState,
   type MouseEvent,
@@ -21,7 +22,7 @@ import DOMPurify from 'dompurify';
 import type { Entry } from '../lib/types.ts';
 import type { Translate } from '../lib/i18n.ts';
 import { fileType, formatSize, resourceUrl } from '../lib/catalog.ts';
-import { syntaxLanguage } from '../lib/syntax.ts';
+import { sourceFormat } from '../lib/syntax.ts';
 import { Button, CopyButton, FileIcon } from './ui.tsx';
 import { PreviewBoundary } from './PreviewBoundary.tsx';
 
@@ -56,7 +57,7 @@ export function Preview({
   restoreFocus?: () => void;
 }) {
   const [mode, setMode] = useState<'source' | 'render' | 'split'>(
-    /^(html?|md)$/.test(fileType(file)) ? 'render' : 'source',
+    sourceFormat(file.name).document ? 'render' : 'source',
   );
   const [text, setText] = useState<string | null>(null),
     [error, setError] = useState(false),
@@ -64,6 +65,11 @@ export function Preview({
     [extra, setExtra] = useState('');
   const [fontLoaded, setFontLoaded] = useState(false);
   const [highlight, setHighlight] = useState(true);
+  const [highlightFailed, setHighlightFailed] = useState(false);
+  const highlightError = useCallback(() => {
+    setHighlight(false);
+    setHighlightFailed(true);
+  }, []);
   const [lineNumbers, setLineNumbers] = useState(true);
   const [wrap, setWrap] = useState(true);
   const ext = fileType(file),
@@ -71,30 +77,10 @@ export function Preview({
   const image = /^(png|jpe?g|webp|gif|svg|ico|avif)$/.test(ext);
   const media = /^(mp4|webm|ogg|mp3|wav|m4a|flac)$/.test(ext);
   const font = /^(woff2?|ttf|otf)$/.test(ext);
-  const document = /^(html?|md)$/.test(ext);
-  const isText =
-    /^(m?js|cjs|css|html?|md|json|txt|xml|ya?ml|ts|tsx|jsx|csv|log|ini|conf|toml|sh|py|php|vue|svelte|sql|map)$/.test(
-      ext,
-    ) || file.name === 'LICENSE';
+  const format = sourceFormat(file.name);
+  const document = Boolean(format.document);
+  const isText = format.text && !image && !media && !font && ext !== 'pdf';
   const tooLarge = (file.size || 0) > 2 * 1024 * 1024;
-  const richSource = useMemo(() => {
-    if (text === null) return true;
-    if (text.length > 200_000) return false;
-    let lines = 1;
-    let start = 0;
-    let longest = 0;
-    for (
-      let end = text.indexOf('\n');
-      end !== -1;
-      end = text.indexOf('\n', start)
-    ) {
-      if (++lines > 5000) return false;
-      longest = Math.max(longest, end - start);
-      start = end + 1;
-    }
-    longest = Math.max(longest, text.length - start);
-    return longest <= 20_000;
-  }, [text]);
   useEffect(() => {
     const abort = new AbortController();
     if (isText && !tooLarge) {
@@ -142,7 +128,7 @@ export function Preview({
     if (!document || text === null) return '';
     const base = new URL(url, location.origin).href.replace(/[^/]*$/, '');
     const baseTag = `<base href="${escapeAttribute(base)}">`;
-    if (ext === 'md') {
+    if (format.document === 'markdown') {
       const content = DOMPurify.sanitize(marked.parse(text, { async: false }), {
         FORBID_TAGS: ['style', 'iframe', 'form'],
         FORBID_ATTR: ['style'],
@@ -156,7 +142,7 @@ export function Preview({
     return /<head(?:\s[^>]*)?>/i.test(text)
       ? text.replace(/<head(?:\s[^>]*)?>/i, (match) => match + baseTag)
       : baseTag + text;
-  }, [text, document, ext, url, theme]);
+  }, [text, document, format.document, url, theme]);
   function duration(value: number) {
     if (!Number.isFinite(value) || value <= 0) return;
     if (value < 1) setExtra(value.toFixed(2) + ' s');
@@ -257,11 +243,12 @@ export function Preview({
             >
               <CodePreview
                 text={text}
-                extension={ext}
-                highlight={highlight && richSource}
-                lineNumbers={lineNumbers && richSource}
-                wrap={wrap && richSource}
-                simple={!richSource}
+                language={format.language}
+                highlight={highlight}
+                lineNumbers={lineNumbers}
+                wrap={wrap}
+                onHighlightError={highlightError}
+                label={t('source')}
               />
             </Suspense>
           </div>
@@ -421,7 +408,6 @@ export function Preview({
               {isText &&
                 !tooLarge &&
                 !error &&
-                richSource &&
                 text !== null &&
                 mode !== 'render' && (
                   <div
@@ -432,19 +418,22 @@ export function Preview({
                     {[
                       {
                         label: t('highlight'),
-                        value: highlight && richSource,
-                        visible: Boolean(syntaxLanguage(ext)),
-                        toggle: () => setHighlight(!highlight),
+                        value: highlight,
+                        visible: Boolean(format.language),
+                        toggle: () => {
+                          setHighlightFailed(false);
+                          setHighlight(!highlight);
+                        },
                       },
                       {
                         label: t('lineNumbers'),
-                        value: lineNumbers && richSource,
+                        value: lineNumbers,
                         visible: true,
                         toggle: () => setLineNumbers(!lineNumbers),
                       },
                       {
                         label: t('wrap'),
-                        value: wrap && richSource,
+                        value: wrap,
                         visible: true,
                         toggle: () => setWrap(!wrap),
                       },
@@ -463,6 +452,9 @@ export function Preview({
                   </div>
                 )}
               <span id="preview-extra">{extra}</span>
+              {highlightFailed && (
+                <span role="status">{t('highlightFailed')}</span>
+              )}
               <span>{encoding}</span>
               <span>
                 {(

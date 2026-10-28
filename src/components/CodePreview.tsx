@@ -1,84 +1,129 @@
-import { useMemo, type ReactNode } from 'react';
-import { common, createLowlight } from 'lowlight';
-import type { RootContent } from 'hast';
-import { syntaxLanguage } from '../lib/syntax.ts';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 
-const lowlight = createLowlight(common);
-
-// Flatten token leaves rather than splitting HTML: multiline tokens keep their
-// classes on each logical line, and resource text is always escaped by React.
-function tokenLines(nodes: RootContent[]) {
-  const lines: ReactNode[][] = [[]];
-  function visit(node: RootContent, classes: string[]) {
-    if (node.type === 'element') {
-      const next = [
-        ...classes,
-        ...((node.properties.className as string[]) || []),
-      ];
-      node.children.forEach((child) => visit(child, next));
-    } else if (node.type === 'text') {
-      node.value.split('\n').forEach((part, index) => {
-        if (index) lines.push([]);
-        const line = lines.at(-1)!;
-        line.push(
-          classes.length ? (
-            <span key={line.length} className={classes.join(' ')}>
-              {part}
-            </span>
-          ) : (
-            part
-          ),
-        );
-      });
-    }
-  }
-  nodes.forEach((node) => visit(node, []));
-  return lines;
-}
+const VirtualCodePreview = lazy(() => import('./VirtualCodePreview.tsx'));
 
 export default function CodePreview({
   text,
-  extension,
+  language,
   highlight,
   lineNumbers,
   wrap,
-  simple,
+  onHighlightError,
+  label,
 }: {
   text: string;
-  extension: string;
+  language?: string;
   highlight: boolean;
   lineNumbers: boolean;
   wrap: boolean;
-  simple: boolean;
+  onHighlightError: () => void;
+  label: string;
 }) {
-  const lines = useMemo(() => {
-    if (simple) return [];
-    const language = syntaxLanguage(extension);
-    if (highlight && language && lowlight.registered(language)) {
-      return tokenLines(lowlight.highlight(language, text).children);
+  const large = useMemo(() => {
+    if (text.length > 200_000) return true;
+    let lines = 1;
+    for (
+      let index = text.indexOf('\n');
+      index !== -1;
+      index = text.indexOf('\n', index + 1)
+    )
+      if (++lines > 5000) return true;
+    return false;
+  }, [text]);
+  const plain = useMemo(() => (large ? [] : text.split('\n')), [text, large]);
+  const [highlighted, setHighlighted] = useState<{
+    text: string;
+    language: string;
+    lines: string[];
+  } | null>(null);
+  useEffect(() => {
+    if (
+      !highlight ||
+      large ||
+      !language ||
+      (highlighted?.text === text && highlighted.language === language)
+    )
+      return;
+    let worker: Worker | undefined;
+    let active = true;
+    const failed = () => {
+      if (active) onHighlightError();
+      worker?.terminate();
+    };
+    const timeout = setTimeout(failed, 10_000);
+    try {
+      worker = new Worker(
+        new URL('../lib/highlight.worker.ts', import.meta.url),
+        { type: 'module' },
+      );
+      worker.onmessage = (event: MessageEvent<{ lines?: string[] }>) => {
+        clearTimeout(timeout);
+        if (active && event.data.lines) {
+          setHighlighted({ text, language, lines: event.data.lines });
+          worker?.terminate();
+        } else failed();
+      };
+      worker.onerror = (event) => {
+        event.preventDefault();
+        failed();
+      };
+      worker.onmessageerror = failed;
+      worker.postMessage({ text, language });
+    } catch {
+      failed();
     }
-    return text.split('\n').map((line) => [line]);
-  }, [text, extension, highlight, simple]);
-  if (simple)
+    return () => {
+      active = false;
+      clearTimeout(timeout);
+      worker?.terminate();
+    };
+  }, [text, language, highlight, highlighted, onHighlightError, large]);
+  if (large)
     return (
-      <pre className="code-preview" data-wrap={wrap} data-simple="true">
-        {text}
-      </pre>
+      <Suspense fallback={<pre className="code-preview">{text}</pre>}>
+        <VirtualCodePreview
+          text={text}
+          language={language}
+          highlight={highlight}
+          lineNumbers={lineNumbers}
+          wrap={wrap}
+          onHighlightError={onHighlightError}
+          label={label}
+        />
+      </Suspense>
     );
+  const colored =
+    highlight && highlighted?.text === text && highlighted.language === language
+      ? highlighted.lines
+      : null;
   return (
-    <pre className="code-preview" data-wrap={wrap}>
+    <pre
+      className="code-preview"
+      data-wrap={wrap}
+      aria-busy={highlight && Boolean(language) && !colored}
+    >
       <code>
-        {lines.map((line, index) => (
+        {plain.map((line, index) => (
           <span className="code-line" key={index}>
             {lineNumbers && (
               <span className="line-number" aria-hidden="true">
                 {index + 1}
               </span>
             )}
-            <span className="line-content">
-              {line}
-              {index < lines.length - 1 ? '\n' : null}
-            </span>
+            {colored ? (
+              <span
+                className="line-content"
+                dangerouslySetInnerHTML={{
+                  __html:
+                    colored[index] + (index < plain.length - 1 ? '\n' : ''),
+                }}
+              />
+            ) : (
+              <span className="line-content">
+                {line}
+                {index < plain.length - 1 ? '\n' : null}
+              </span>
+            )}
           </span>
         ))}
       </code>

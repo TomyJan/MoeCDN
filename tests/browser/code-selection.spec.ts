@@ -1,5 +1,46 @@
 import { test, expect } from '@playwright/test';
 
+test('CRLF 多行 token 高亮不增加空行，切换高亮后文本和选区保持一致', async ({
+  page,
+}) => {
+  const source = '/* multi\r\nline */\r\nconst answer = 42;\r\n';
+  await page.route('**/test/sample.js', (route) =>
+    route.fulfill({ contentType: 'text/javascript', body: source }),
+  );
+  await page.goto('/test/');
+  await page
+    .getByRole('button', { name: '预览文件 sample.js', exact: true })
+    .click();
+  const code = page.locator('.code-preview');
+  await expect(code).toHaveAttribute('aria-busy', 'false');
+  await expect(page.locator('.code-line')).toHaveCount(4);
+  expect((await page.locator('.line-content').allTextContents()).join('')).toBe(
+    source,
+  );
+  const coloredHeight = (await page
+    .locator('.code-line')
+    .first()
+    .boundingBox())!.height;
+  const selected = () =>
+    code.evaluate((element) => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      const selection = getSelection()!;
+      selection.removeAllRanges();
+      selection.addRange(range);
+      return selection.toString();
+    });
+  const coloredSelection = await selected();
+  await page.getByRole('button', { name: '语法高亮: 开', exact: true }).click();
+  expect((await page.locator('.line-content').allTextContents()).join('')).toBe(
+    source,
+  );
+  expect(await selected()).toBe(coloredSelection);
+  expect((await page.locator('.code-line').first().boundingBox())!.height).toBe(
+    coloredHeight,
+  );
+});
+
 test('源码选区保留空行、缩进和末尾换行，切换显示选项后内容不变', async ({
   page,
 }) => {

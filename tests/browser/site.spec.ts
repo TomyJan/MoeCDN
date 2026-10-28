@@ -342,7 +342,9 @@ test('源码开关默认开启，分别控制高亮、行号和长行换行', as
   ).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('大源码和极多行文本简化显示，保留完整正文并可关闭', async ({ page }) => {
+test('大源码和多行文本保留高亮、行号及换行开关，正文完整并可关闭', async ({
+  page,
+}) => {
   await page.goto('/lib/mathjax/3.2.2/es5/');
   await page
     .getByRole('button', {
@@ -350,9 +352,13 @@ test('大源码和极多行文本简化显示，保留完整正文并可关闭',
       exact: true,
     })
     .click();
-  await expect(page.locator('.source-options')).toHaveCount(0);
-  await expect(page.locator('.code-preview')).toContainText('MathJax');
-  await expect(page.locator('.code-preview [class^="hljs-"]')).toHaveCount(0);
+  await expect(page.locator('.source-options button')).toHaveCount(3);
+  await expect(page.locator('.code-preview')).toContainText(
+    '__webpack_modules__',
+  );
+  await expect(
+    page.locator('.code-preview .hljs-keyword').first(),
+  ).toBeAttached();
   await page.getByRole('button', { name: '关闭', exact: true }).click();
   await expect(page.locator('#preview-dialog')).toBeHidden();
   const text = '// 短行\n'.repeat(6000);
@@ -363,11 +369,12 @@ test('大源码和极多行文本简化显示，保留完整正文并可关闭',
   await page
     .getByRole('button', { name: '预览文件 APlayer.min.css', exact: true })
     .click();
-  await expect(page.locator('.source-options')).toHaveCount(0);
-  await expect(page.locator('.code-preview')).toHaveText(text, {
-    useInnerText: false,
-  });
-  await expect(page.locator('.code-preview span')).toHaveCount(0);
+  await expect(page.locator('.source-options button')).toHaveCount(3);
+  await expect(page.locator('.cm-lineNumbers')).toBeVisible();
+  await expect(page.locator('.cm-content')).toContainText('短行');
+  expect(await page.locator('.cm-line').count()).toBeLessThan(200);
+  await page.getByRole('button', { name: '显示行号: 开', exact: true }).click();
+  await expect(page.locator('.cm-lineNumbers')).toHaveCount(0);
 });
 
 test('预览开关仅显示当前模式和文件支持的操作', async ({ page }) => {
