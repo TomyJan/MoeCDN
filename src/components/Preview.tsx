@@ -21,6 +21,7 @@ import DOMPurify from 'dompurify';
 import type { Entry } from '../lib/types.ts';
 import type { Translate } from '../lib/i18n.ts';
 import { fileType, formatSize, resourceUrl } from '../lib/catalog.ts';
+import { syntaxLanguage } from '../lib/syntax.ts';
 import { Button, CopyButton, FileIcon } from './ui.tsx';
 
 const PdfPreview = lazy(() => import('./PdfPreview.tsx'));
@@ -396,47 +397,50 @@ export function Preview({
               <span title={t('time')}>{timestamp}</span>
             </div>
             <div className="property-right">
-              {isText && !tooLarge && !error && (
-                <div
-                  className="source-options"
-                  role="group"
-                  aria-label={t('source')}
-                >
-                  {[
-                    {
-                      label: t('highlight'),
-                      value: highlight && richSource,
-                      available: richSource,
-                      toggle: () => setHighlight(!highlight),
-                    },
-                    {
-                      label: t('lineNumbers'),
-                      value: lineNumbers && richSource,
-                      available: richSource,
-                      toggle: () => setLineNumbers(!lineNumbers),
-                    },
-                    {
-                      label: t('wrap'),
-                      value: wrap && richSource,
-                      available: richSource,
-                      toggle: () => setWrap(!wrap),
-                    },
-                  ].map((option) => (
-                    <button
-                      key={option.label}
-                      type="button"
-                      aria-pressed={option.value}
-                      disabled={!option.available}
-                      title={
-                        !option.available ? t('simplifiedSource') : undefined
-                      }
-                      onClick={option.toggle}
-                    >
-                      {option.label}: {t(option.value ? 'on' : 'off')}
-                    </button>
-                  ))}
-                </div>
-              )}
+              {isText &&
+                !tooLarge &&
+                !error &&
+                richSource &&
+                text !== null &&
+                mode !== 'render' && (
+                  <div
+                    className="source-options"
+                    role="group"
+                    aria-label={t('source')}
+                  >
+                    {[
+                      {
+                        label: t('highlight'),
+                        value: highlight && richSource,
+                        visible: Boolean(syntaxLanguage(ext)),
+                        toggle: () => setHighlight(!highlight),
+                      },
+                      {
+                        label: t('lineNumbers'),
+                        value: lineNumbers && richSource,
+                        visible: true,
+                        toggle: () => setLineNumbers(!lineNumbers),
+                      },
+                      {
+                        label: t('wrap'),
+                        value: wrap && richSource,
+                        visible: true,
+                        toggle: () => setWrap(!wrap),
+                      },
+                    ]
+                      .filter((option) => option.visible)
+                      .map((option) => (
+                        <button
+                          key={option.label}
+                          type="button"
+                          aria-pressed={option.value}
+                          onClick={option.toggle}
+                        >
+                          {option.label}: {t(option.value ? 'on' : 'off')}
+                        </button>
+                      ))}
+                  </div>
+                )}
               <span id="preview-extra">{extra}</span>
               <span>{encoding}</span>
               <span>

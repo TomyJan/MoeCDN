@@ -1,27 +1,9 @@
 import { useMemo, type ReactNode } from 'react';
 import { common, createLowlight } from 'lowlight';
 import type { RootContent } from 'hast';
+import { syntaxLanguage } from '../lib/syntax.ts';
 
 const lowlight = createLowlight(common);
-const languages: Record<string, string> = {
-  js: 'javascript',
-  mjs: 'javascript',
-  cjs: 'javascript',
-  jsx: 'javascript',
-  ts: 'typescript',
-  tsx: 'typescript',
-  html: 'xml',
-  htm: 'xml',
-  vue: 'xml',
-  svelte: 'xml',
-  md: 'markdown',
-  yml: 'yaml',
-  sh: 'bash',
-  py: 'python',
-  conf: 'ini',
-  toml: 'ini',
-  map: 'json',
-};
 
 // Flatten token leaves rather than splitting HTML: multiline tokens keep their
 // classes on each logical line, and resource text is always escaped by React.
@@ -71,8 +53,8 @@ export default function CodePreview({
 }) {
   const lines = useMemo(() => {
     if (simple) return [];
-    const language = languages[extension] || extension;
-    if (highlight && lowlight.registered(language)) {
+    const language = syntaxLanguage(extension);
+    if (highlight && language && lowlight.registered(language)) {
       return tokenLines(lowlight.highlight(language, text).children);
     }
     return text.split('\n').map((line) => [line]);

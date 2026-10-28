@@ -326,9 +326,7 @@ test('大源码和极多行文本简化显示，保留完整正文并可关闭',
       exact: true,
     })
     .click();
-  await expect(
-    page.getByRole('button', { name: '语法高亮: 关', exact: true }),
-  ).toBeDisabled();
+  await expect(page.locator('.source-options')).toHaveCount(0);
   await expect(page.locator('.code-preview')).toContainText('MathJax');
   await expect(page.locator('.code-preview [class^="hljs-"]')).toHaveCount(0);
   await page.getByRole('button', { name: '关闭', exact: true }).click();
@@ -341,11 +339,44 @@ test('大源码和极多行文本简化显示，保留完整正文并可关闭',
   await page
     .getByRole('button', { name: '预览文件 APlayer.min.css', exact: true })
     .click();
-  await expect(
-    page.getByRole('button', { name: '显示行号: 关', exact: true }),
-  ).toBeDisabled();
+  await expect(page.locator('.source-options')).toHaveCount(0);
   await expect(page.locator('.code-preview')).toHaveText(text, {
     useInnerText: false,
   });
   await expect(page.locator('.code-preview span')).toHaveCount(0);
+});
+
+test('预览开关仅显示当前模式和文件支持的操作', async ({ page }) => {
+  await page.goto('/test/');
+  await page
+    .getByRole('button', { name: '预览文件 sample.txt', exact: true })
+    .click();
+  await expect(page.getByRole('button', { name: /^语法高亮:/ })).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: '显示行号: 开', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '自动换行: 开', exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: '关闭', exact: true }).click();
+  await page.goto(markdownDirectory);
+  await page
+    .getByRole('button', { name: '预览文件 MirrorStie-README.md', exact: true })
+    .click();
+  await expect(page.locator('.source-options')).toHaveCount(0);
+  await page.getByRole('button', { name: '源码', exact: true }).click();
+  await expect(page.locator('.source-options button')).toHaveCount(3);
+  await page.getByRole('button', { name: '显示行号: 开', exact: true }).click();
+  await page.getByRole('button', { name: '渲染', exact: true }).click();
+  await expect(page.locator('.source-options')).toHaveCount(0);
+  await page.getByRole('button', { name: '对照', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: '显示行号: 关', exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: '关闭', exact: true }).click();
+  await page.goto('/test/');
+  await page
+    .getByRole('button', { name: '预览文件 sample.png', exact: true })
+    .click();
+  await expect(page.locator('.source-options')).toHaveCount(0);
 });

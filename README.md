@@ -11,7 +11,7 @@ pnpm dev
 
 运行版本由 [package.json](package.json)、[.nvmrc](.nvmrc) 与 [pnpm-lock.yaml](pnpm-lock.yaml) 管理。构建使用 `pnpm build`，输出到 `dist/`；`pnpm verify` 执行完整静态检查，`pnpm test:e2e` 执行浏览器检查。
 
-文本预览支持独立切换语法高亮、行号与换行。超过 20 万字符、单行超过 2 万字符或超过 5,000 行时，使用保留完整原文的简化预览，并禁用这三项增强显示以保持响应；超过 2 MiB 的文本请下载或打开原文件。
+文本预览支持独立切换语法高亮、行号与换行。超过 20 万字符、单行超过 2 万字符或超过 5,000 行时，使用保留完整原文的简化预览，并隐藏这三项增强显示以保持响应；超过 2 MiB 的文本请下载或打开原文件。
 
 将文件放入 `resources/`，对外 URL 保持从网站根目录开始，例如 `resources/lib/a.js` 发布为 `/lib/a.js`。推送后由 EO Makers 重新构建索引和部署。
 
