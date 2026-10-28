@@ -50,6 +50,7 @@ export function SearchDialog({
   const [limit, setLimit] = useState(100);
   const [loadingMore, setLoadingMore] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const previousFocus = useRef<HTMLElement | null>(null);
   const [results, setResults] = useState<HTMLDivElement | null>(null);
   const [sentinel, setSentinel] = useState<HTMLDivElement | null>(null);
   const navigating = useRef(false);
@@ -99,12 +100,21 @@ export function SearchDialog({
           aria-describedby={undefined}
           onOpenAutoFocus={(event) => {
             event.preventDefault();
+            previousFocus.current =
+              document.activeElement instanceof HTMLElement
+                ? document.activeElement
+                : null;
             navigating.current = false;
             input.current?.focus();
           }}
           onCloseAutoFocus={(event) => {
             event.preventDefault();
-            if (!navigating.current) trigger.current?.focus();
+            if (!navigating.current) {
+              const target = trigger.current?.isConnected
+                ? trigger.current
+                : previousFocus.current;
+              if (target?.isConnected) target.focus({ preventScroll: true });
+            }
           }}
         >
           <Dialog.Title className="sr-only">{t('searchTitle')}</Dialog.Title>

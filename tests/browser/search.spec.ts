@@ -1,5 +1,21 @@
 import { test, expect } from '@playwright/test';
 
+for (const path of ['/history/', '/missing-directory/']) {
+  test(`${path} 关闭快捷搜索后恢复原焦点和滚动位置`, async ({ page }) => {
+    await page.goto(path);
+    await expect(page.locator('#open-search')).toHaveCount(0);
+    const opener = page.locator('footer a[href="/history/"]');
+    await opener.focus();
+    const scroll = await page.evaluate(() => window.scrollY);
+    await page.keyboard.press('/');
+    await expect(page.locator('#query')).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#search-dialog')).toBeHidden();
+    await expect(opener).toBeFocused();
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scroll);
+  });
+}
+
 test('关闭进行中的搜索续载后重开，不残留加载提示且仍可续载', async ({
   page,
 }) => {
