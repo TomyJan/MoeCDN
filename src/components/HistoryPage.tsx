@@ -70,7 +70,7 @@ export function HistoryPage({ t }: { t: Translate }) {
               </h2>
               <div className="history-changes">
                 {entry.note && <p className="history-note">{entry.note}</p>}
-                <ul>
+                <ul role="list">
                   {entry.changes.map((change, index) => (
                     <li key={index} dangerouslySetInnerHTML={inline(change)} />
                   ))}
