@@ -1,0 +1,31 @@
+!Title: Mi-ADHosts-for-AdGuard
+!Version: 20230211165322
+!Total lines: 31
+||a.stat.xiaomi.com^
+||abtest.mistat.xiaomi.com^
+||ad.mi.com^
+||ad.xiaomi.com^
+||ad.xiaomi.com^
+||ad1.xiaomi.com^
+||alog.umeng.com^
+||api.ad.xiaomi.com^
+||api.ad.xiaomi.com^
+||assistant.pandora.xiaomi.com^
+||auth.api.gitv.tv^
+||bss.pandora.xiaomi.com^
+||cdn.ad.xiaomi.com^
+||config.kuyun.com^
+||data.mistat.xiaomi.com^
+||de.pandora.xiaomi.com^
+||dvb.pandora.xiaomi.com^
+||e.ad.xiaomi.com^
+||gallery.pandora.xiaomi.com^
+||gvod.aiseejapp.atianqi.com^
+||jellyfish.pandora.xiaomi.com^
+||logonext.tv.kuyun.com^
+||misc.in.duokanbox.com^
+||misc.pandora.xiaomi.com^
+||mishop.pandora.xiaomi.com^
+||o2o.api.xiaomi.com^
+||omgmta.play.aiseet.atianqi.com^
+||pandora.mi.com^
