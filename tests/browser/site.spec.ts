@@ -1,5 +1,88 @@
 import { test, expect } from '@playwright/test';
 
+const cssDirectory = '/lib/aplayer/1.10.1/';
+const cssFile = 'lib/aplayer/1.10.1/APlayer.min.css';
+const markdownDirectory = '/web-static/private/tomyjan-website/mirrorsite/';
+const markdownFile =
+  'web-static/private/tomyjan-website/mirrorsite/MirrorStie-README.md';
+const htmlDirectory =
+  '/web-static/public/wordpress-argon-theme/latest/assets/vendor/svg-loaders/';
+
+test('更新历史独立页面支持直达刷新，读取历史记录并返回目录', async ({
+  page,
+  request,
+}) => {
+  await page.goto('/');
+  await page.getByRole('link', { name: '更新历史', exact: true }).click();
+  await expect(page).toHaveURL(/\/history\/$/);
+  await expect(
+    page.getByRole('heading', { name: '更新历史', exact: true }),
+  ).toBeVisible();
+  await expect(page.locator('#history')).toContainText('网站正式上线');
+  await expect(page.locator('#history')).toContainText('纯静态');
+  await page.reload();
+  await expect(page.locator('#history')).toContainText('2022-05-28');
+  const data = await request.get('/_moecdn/history.json');
+  expect(data.ok()).toBe(true);
+  expect((await data.json()).at(-1).date).toBe('2022-05-28');
+  await page.getByRole('button', { name: '根目录', exact: true }).click();
+  await expect(page).toHaveURL('/');
+  await expect(page.locator('#rows')).toContainText('lib');
+});
+
+test('复合排序菜单按字段选择升降序并更新真实列表', async ({ page }) => {
+  await page.goto('/lib/aplayer/1.10.1/');
+  await page.getByRole('button', { name: '名称升序', exact: true }).click();
+  await page.getByRole('menuitem', { name: '体积', exact: true }).focus();
+  await page.keyboard.press('ArrowRight');
+  await page.getByRole('menuitemradio', { name: '升序', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: '体积升序', exact: true }),
+  ).toBeVisible();
+  const ascending = await page.locator('#rows .file-name').allTextContents();
+  await page.getByRole('button', { name: '体积升序', exact: true }).click();
+  await page.getByRole('menuitem', { name: '体积', exact: true }).focus();
+  await page.keyboard.press('ArrowRight');
+  await page.getByRole('menuitemradio', { name: '降序', exact: true }).click();
+  await expect(page.locator('#rows .file-name')).toHaveCount(ascending.length);
+  expect(await page.locator('#rows .file-name').allTextContents()).toEqual(
+    [...ascending].reverse(),
+  );
+  await page.getByRole('button', { name: '体积降序', exact: true }).click();
+  await page.getByRole('menuitem', { name: '时间', exact: true }).focus();
+  await page.keyboard.press('ArrowRight');
+  await page.getByRole('menuitemradio', { name: '升序', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: '时间升序', exact: true }),
+  ).toBeVisible();
+});
+
+test('窄屏排序的两层菜单完整位于视口中', async ({ page }) => {
+  for (const width of [320, 390]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto(cssDirectory);
+    await page.getByRole('button', { name: '名称升序', exact: true }).click();
+    await page.getByRole('menuitem', { name: '体积', exact: true }).click();
+    const menu = page.getByRole('menu', { name: '体积', exact: true });
+    await expect(menu).toBeVisible();
+    await expect
+      .poll(async () => (await menu.boundingBox())!.x)
+      .toBeGreaterThanOrEqual(0);
+    await expect
+      .poll(async () => {
+        const box = (await menu.boundingBox())!;
+        return box.x + box.width;
+      })
+      .toBeLessThanOrEqual(width);
+    await page
+      .getByRole('menuitemradio', { name: '升序', exact: true })
+      .click();
+    await expect(
+      page.getByRole('button', { name: '体积升序', exact: true }),
+    ).toBeVisible();
+  }
+});
+
 test('PDF 使用安全的页面渲染器显示真实内容', async ({ page }) => {
   await page.goto('/web-static/public/other/');
   await page
@@ -51,11 +134,11 @@ test('递归搜索、范围切换、空状态与目录树', async ({ page }) => 
   await page.locator('#query').fill('jquery.js');
   await expect(page.locator('#rows tr')).not.toHaveCount(0);
   await expect(page.locator('#rows')).toContainText('3.6.0');
-  await page.locator('#query').fill('test.css');
+  await page.locator('#query').fill('APlayer.min.css');
   await expect(page.locator('#empty')).toBeVisible();
   await page.getByRole('button', { name: '当前目录', exact: true }).click();
   await page.getByRole('menuitemradio', { name: '全站', exact: true }).click();
-  await expect(page.locator('#rows')).toContainText('test.css');
+  await expect(page.locator('#rows')).toContainText('APlayer.min.css');
   await expect(
     page.getByRole('button', { name: '收起 lib', exact: true }),
   ).toHaveAttribute('aria-expanded', 'true');
@@ -66,8 +149,8 @@ test('共享高级复制浮层记住选择、按类型隐藏选项、同按钮�
   context,
 }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-  await page.goto('/');
-  const trigger = page.locator('[data-advanced="test.css"]');
+  await page.goto(cssDirectory);
+  const trigger = page.locator(`[data-advanced="${cssFile}"]`);
   await trigger.click();
   await page.locator('#include-sri').check();
   await page.locator('#include-cors').check();
@@ -89,26 +172,33 @@ test('共享高级复制浮层记住选择、按类型隐藏选项、同按钮�
   );
   await trigger.click();
   await expect(page.locator('#copy-dialog')).toBeHidden();
-  await page.locator('[data-advanced="README.md"]').click();
+  await page.goto(markdownDirectory);
+  await page.locator(`[data-advanced="${markdownFile}"]`).click();
   await expect(
     page.getByRole('button', { name: 'HTML 标签', exact: true }),
   ).toBeHidden();
 });
 
 test('弹窗预览、渲染对照和元数据，不执行 HTML 脚本', async ({ page }) => {
-  await page.goto('/');
+  await page.goto(markdownDirectory);
   await page
-    .getByRole('button', { name: '预览文件 README.md', exact: true })
+    .getByRole('button', { name: '预览文件 MirrorStie-README.md', exact: true })
     .click();
   await expect(page.locator('#preview-dialog')).toBeVisible();
-  await expect(page.locator('.code-preview')).toContainText('MoeCDN');
+  await expect(
+    page.getByRole('button', { name: '渲染', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.render-pane')).toBeVisible();
+  await page.getByRole('button', { name: '源码', exact: true }).click();
+  await expect(page.locator('.code-preview')).not.toBeEmpty();
   await page.getByRole('button', { name: '对照', exact: true }).click();
   await expect(page.locator('.render-pane')).toBeVisible();
   await expect(page.locator('.render-pane')).toHaveAttribute('sandbox', '');
   await expect(page.locator('#preview-properties')).not.toContainText('创建');
   await page.getByRole('button', { name: '关闭', exact: true }).click();
+  await page.goto('/web-static/public/wordpress-argon-theme/latest/');
   await page
-    .getByRole('button', { name: '预览文件 favicon.ico', exact: true })
+    .getByRole('button', { name: '预览文件 screenshot.png', exact: true })
     .click();
   await expect(page.locator('#preview-extra')).toContainText('×');
 });
@@ -124,9 +214,10 @@ test('语言主题切换和窄屏无溢出', async ({ page }) => {
   await page.getByRole('menuitemradio', { name: 'Light', exact: true }).click();
   await page.reload();
   await expect(page.locator('#title')).toHaveText('All files');
+  await page.goto(cssDirectory);
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 800 });
-    await page.locator('[data-advanced="test.css"]').click();
+    await page.locator(`[data-advanced="${cssFile}"]`).click();
     const box = await page.locator('#copy-dialog').boundingBox();
     expect(box!.x).toBeGreaterThanOrEqual(0);
     expect(box!.x + box!.width).toBeLessThanOrEqual(width);
@@ -153,17 +244,19 @@ test('接近底部自动加载，不显示手动按钮', async ({ page }) => {
 });
 
 test('预览中复用复制浮层并阻止待预览网页执行脚本', async ({ page }) => {
-  await page.route('**/404.html', (route) =>
+  await page.route('**/svg-loaders/index.html', (route) =>
     route.fulfill({
       contentType: 'text/html',
       body: '<!doctype html><html><head><title>unsafe</title></head><body><p>HTML preview</p><script>parent.__executed=true;document.body.textContent="EXECUTED"</script></body></html>',
     }),
   );
-  await page.goto('/');
+  await page.goto(htmlDirectory);
   await page
-    .getByRole('button', { name: '预览文件 404.html', exact: true })
+    .getByRole('button', { name: '预览文件 index.html', exact: true })
     .click();
-  await page.getByRole('button', { name: '渲染', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: '渲染', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true');
   await expect(page.frameLocator('.render-pane').locator('p')).toHaveText(
     'HTML preview',
   );

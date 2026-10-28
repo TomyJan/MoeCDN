@@ -4,7 +4,57 @@ import {
   resourceUrl,
   readDirectoryPath,
 } from '../src/lib/catalog.ts';
-import type { Entry } from '../src/lib/types.ts';
+import type { Entry, Sort } from '../src/lib/types.ts';
+
+it.each([
+  ['name', ['folder', 'a.txt', 'b.txt', 'c.txt']],
+  ['name-desc', ['folder', 'c.txt', 'b.txt', 'a.txt']],
+  ['size', ['folder', 'a.txt', 'c.txt', 'b.txt']],
+  ['size-asc', ['folder', 'b.txt', 'c.txt', 'a.txt']],
+  ['date', ['folder', 'a.txt', 'b.txt', 'c.txt']],
+  ['date-asc', ['folder', 'c.txt', 'b.txt', 'a.txt']],
+] as [Sort, string[]][])(
+  '排序 %s 保持目录在前并按字段和方向排序',
+  (sort, expected) => {
+    const files: Entry[] = [
+      {
+        name: 'b.txt',
+        path: 'b.txt',
+        parent: '',
+        dir: false,
+        size: 10,
+        modifiedAt: '2026-10-26T00:00:00Z',
+      },
+      {
+        name: 'a.txt',
+        path: 'a.txt',
+        parent: '',
+        dir: false,
+        size: 30,
+        modifiedAt: '2026-10-27T00:00:00Z',
+      },
+      {
+        name: 'folder',
+        path: 'folder/',
+        parent: '',
+        dir: true,
+        size: null,
+        modifiedAt: '',
+      },
+      {
+        name: 'c.txt',
+        path: 'c.txt',
+        parent: '',
+        dir: false,
+        size: 20,
+        modifiedAt: '',
+      },
+    ];
+    expect(
+      selectEntries(files, '', '', 'current', sort).map((file) => file.name),
+    ).toEqual(expected);
+  },
+);
 it('最近修改按实际时间排序，兼容提交时间的时区偏移', () => {
   const files: Entry[] = [
     {

@@ -14,6 +14,7 @@ pnpm dev
 将文件放入 `resources/`，对外 URL 保持从网站根目录开始，例如 `resources/lib/a.js` 发布为 `/lib/a.js`。推送后由 EO Makers 重新构建索引和部署。
 
 - [部署与资源维护](docs/deployment.md)
+- 更新历史维护在 [data/history.json](data/history.json)，网站页脚提供独立历史页面。
 - [已确认设计](design/README.md)与[原始 HTML 原型](design/prototype/README.md)
 - [legacy 分支](https://github.com/TomyJan/MoeCDN/tree/legacy)：2026 年 10 月 28 日的 h5ai 旧站归档。
 

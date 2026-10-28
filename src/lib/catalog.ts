@@ -32,12 +32,15 @@ export function selectEntries(
     )
     .sort((a, b) => {
       if (a.dir !== b.dir) return a.dir ? -1 : 1;
-      if (sort === 'size')
-        return (b.size || 0) - (a.size || 0) || a.path.localeCompare(b.path);
-      if (sort === 'date')
+      if (sort === 'size' || sort === 'size-asc')
         return (
-          (Date.parse(b.modifiedAt) || 0) - (Date.parse(a.modifiedAt) || 0) ||
+          ((b.size || 0) - (a.size || 0)) * (sort === 'size-asc' ? -1 : 1) ||
           a.path.localeCompare(b.path)
+        );
+      if (sort === 'date' || sort === 'date-asc')
+        return (
+          ((Date.parse(b.modifiedAt) || 0) - (Date.parse(a.modifiedAt) || 0)) *
+            (sort === 'date-asc' ? -1 : 1) || a.path.localeCompare(b.path)
         );
       return (
         a.name.localeCompare(b.name, 'zh-CN', { numeric: true }) *

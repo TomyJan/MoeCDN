@@ -50,7 +50,9 @@ export function Preview({
   lang: string;
   children?: React.ReactNode;
 }) {
-  const [mode, setMode] = useState<'source' | 'render' | 'split'>('source');
+  const [mode, setMode] = useState<'source' | 'render' | 'split'>(
+    /^(html?|md)$/.test(fileType(file)) ? 'render' : 'source',
+  );
   const [text, setText] = useState<string | null>(null),
     [error, setError] = useState(false),
     [encoding, setEncoding] = useState(''),
@@ -290,6 +292,7 @@ export function Preview({
                     <button
                       key={option.key}
                       aria-label={t(option.key)}
+                      title={t(option.key)}
                       aria-pressed={mode === option.key}
                       onClick={() => setMode(option.key)}
                     >
@@ -357,7 +360,7 @@ export function Preview({
           <footer id="preview-properties" className="preview-properties">
             <div className="property-left">
               <span>{formatSize(file.size)}</span>
-              <span title={t('modified')}>{timestamp}</span>
+              <span title={t('time')}>{timestamp}</span>
             </div>
             <div className="property-right">
               <span id="preview-extra">{extra}</span>

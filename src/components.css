@@ -85,11 +85,116 @@
     opacity: 0.25;
   }
 }
-.root-tree {
-  padding-left: 31px;
-}
 .tree-name {
   border: 0;
+}
+.tree-name > svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.brand-icon {
+  width: 31px;
+  height: 31px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.menu-chevron {
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+[data-state='open'] > .menu-chevron {
+  transform: rotate(180deg);
+}
+.submenu-chevron {
+  margin-left: auto;
+}
+.sort-category[data-selected='true'] {
+  color: var(--ink);
+}
+@media (max-width: 400px) {
+  .sort-menu,
+  .sort-submenu {
+    min-width: 0;
+    width: min(175px, calc((100vw - 32px) / 2));
+  }
+}
+.history-page {
+  max-width: 940px;
+}
+.history-page .heading-main > svg {
+  width: 24px;
+  height: 24px;
+  color: var(--muted);
+}
+.history-timeline {
+  margin-top: 32px;
+}
+.history-entry {
+  display: grid;
+  grid-template-columns: 105px minmax(0, 1fr);
+  column-gap: 28px;
+  padding-bottom: 28px;
+}
+.history-entry h2 {
+  font-size: 13px;
+  line-height: 1.9;
+  font-weight: 500;
+  color: var(--muted);
+  margin: 0;
+}
+.history-changes {
+  position: relative;
+  border-left: 1px solid var(--border);
+  padding: 0 0 12px 26px;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.9;
+  overflow-wrap: anywhere;
+}
+.history-changes::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 8px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.history-entry:first-child .history-changes::before {
+  background: var(--accent);
+}
+.history-changes ul {
+  list-style: disc;
+  margin: 0;
+  padding-left: 16px;
+}
+.history-changes li + li {
+  margin-top: 8px;
+}
+.history-changes code {
+  font-family: inherit;
+  font-size: 0.94em;
+  background: var(--hover);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+.history-note,
+.history-status {
+  color: var(--muted);
+}
+.history-note {
+  margin: 0 0 12px;
+}
+@media (max-width: 600px) {
+  .history-entry {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .history-changes {
+    padding-left: 18px;
+    margin-left: 3px;
+  }
 }
 .topbar {
   position: sticky;

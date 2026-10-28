@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import {
-  ArrowDownWideNarrow,
   ArrowUp,
-  ArrowUpAZ,
-  ArrowDownAZ,
-  CalendarDays,
   ChevronDown,
   ChevronRight,
   CodeXml,
@@ -32,6 +28,8 @@ import { Button, CopyButton, FileIcon, Menu } from './components/ui.tsx';
 import { DirectoryTree } from './components/DirectoryTree.tsx';
 import { AdvancedCopy, type CopyTarget } from './components/AdvancedCopy.tsx';
 import { Preview } from './components/Preview.tsx';
+import { HistoryPage } from './components/HistoryPage.tsx';
+import { SortMenu } from './components/SortMenu.tsx';
 
 function preferences(): { lang?: Language; theme?: Theme } {
   try {
@@ -174,9 +172,12 @@ export function App() {
   }, [preview]);
   const normalized =
     path === '' ? '' : path && (path.endsWith('/') ? path : path + '/');
+  const isHistory = normalized === 'history/';
   const exists =
     normalized !== null &&
-    (normalized === '' || entries?.some((f) => f.dir && f.path === normalized));
+    (normalized === '' ||
+      isHistory ||
+      entries?.some((f) => f.dir && f.path === normalized));
   useEffect(() => {
     if (exists && path !== normalized && normalized !== null) {
       history.replaceState(null, '', resourceUrl(normalized));
@@ -280,9 +281,7 @@ export function App() {
             navigate('');
           }}
         >
-          <span className="brand-mark" aria-hidden="true">
-            /›
-          </span>
+          <img className="brand-icon" src="/favicon.ico" alt="" />
           <span>MoeCDN</span>
           <span className="domain">cdn.amoe.cc</span>
         </a>
@@ -378,7 +377,7 @@ export function App() {
                 t={t}
               />
             </aside>
-            <main ref={main}>
+            <main ref={main} className={isHistory ? 'history-main' : undefined}>
               <nav
                 id="breadcrumbs"
                 className="breadcrumbs"
@@ -398,7 +397,7 @@ export function App() {
                         index === segments.length - 1 ? 'page' : undefined
                       }
                     >
-                      {part}
+                      {isHistory ? t('history') : part}
                     </button>
                   </span>
                 ))}
@@ -411,6 +410,8 @@ export function App() {
                     {t('backRoot')}
                   </Button>
                 </div>
+              ) : isHistory ? (
+                <HistoryPage t={t} />
               ) : (
                 <>
                   <div className="heading">
@@ -488,7 +489,10 @@ export function App() {
                         ]}
                       >
                         <span>{t(scope)}</span>
-                        <ChevronDown />
+                        <ChevronDown
+                          className="menu-chevron"
+                          aria-hidden="true"
+                        />
                       </Menu>
                     </div>
                   </div>
@@ -496,56 +500,7 @@ export function App() {
                     <div id="result-count" aria-live="polite" hidden={!stats}>
                       {stats}
                     </div>
-                    <Menu
-                      label={t(
-                        sort === 'name'
-                          ? 'nameAsc'
-                          : sort === 'name-desc'
-                            ? 'nameDesc'
-                            : sort === 'date'
-                              ? 'dateDesc'
-                              : 'sizeDesc',
-                      )}
-                      value={sort}
-                      className="text-button sort-trigger"
-                      onChange={(value) => setSort(value as Sort)}
-                      options={[
-                        {
-                          value: 'name',
-                          label: t('nameAsc'),
-                          icon: <ArrowDownAZ />,
-                        },
-                        {
-                          value: 'name-desc',
-                          label: t('nameDesc'),
-                          icon: <ArrowUpAZ />,
-                        },
-                        {
-                          value: 'date',
-                          label: t('dateDesc'),
-                          icon: <CalendarDays />,
-                        },
-                        {
-                          value: 'size',
-                          label: t('sizeDesc'),
-                          icon: <ArrowDownWideNarrow />,
-                        },
-                      ]}
-                    >
-                      <ArrowDownWideNarrow />
-                      <span>
-                        {t(
-                          sort === 'name'
-                            ? 'nameAsc'
-                            : sort === 'name-desc'
-                              ? 'nameDesc'
-                              : sort === 'date'
-                                ? 'dateDesc'
-                                : 'sizeDesc',
-                        )}
-                      </span>
-                      <ChevronDown />
-                    </Menu>
+                    <SortMenu value={sort} onChange={setSort} t={t} />
                   </div>
                   <table className="file-table">
                     <thead>
@@ -555,7 +510,7 @@ export function App() {
                           {t('size')}
                         </th>
                         <th scope="col" className="date-column">
-                          {t('modified')}
+                          {t('time')}
                         </th>
                         <th scope="col" className="action-column">
                           {t('actions')}
@@ -679,6 +634,25 @@ export function App() {
                 </a>
               </>
             )}
+            {' | '}
+            <a
+              href="/history/"
+              aria-current={isHistory ? 'page' : undefined}
+              onClick={(event) => {
+                if (
+                  event.button !== 0 ||
+                  event.metaKey ||
+                  event.ctrlKey ||
+                  event.shiftKey ||
+                  event.altKey
+                )
+                  return;
+                event.preventDefault();
+                navigate('history/');
+              }}
+            >
+              {t('history')}
+            </a>
           </footer>
         </>
       )}

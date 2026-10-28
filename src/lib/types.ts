@@ -16,4 +16,5 @@ export interface Catalog {
 }
 export type Language = 'zh-CN' | 'en';
 export type Theme = 'system' | 'light' | 'dark';
-export type Sort = 'name' | 'name-desc' | 'date' | 'size';
+export type Sort =
+  'name' | 'name-desc' | 'date' | 'date-asc' | 'size' | 'size-asc';

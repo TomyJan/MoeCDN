@@ -57,6 +57,8 @@ export async function prepare(): Promise<Catalog> {
   if (tooLarge) throw new Error(`资源超过 EO 单文件限制：${tooLarge.path}`);
   const catalog = { entries, revision, builtAt: new Date().toISOString() };
   await mkdir('public/_moecdn/icons', { recursive: true });
+  await cp('src/assets/favicon.ico', 'public/favicon.ico');
+  await cp('data/history.json', 'public/_moecdn/history.json');
   await writeFile('public/_moecdn/catalog.json', JSON.stringify(catalog));
   await Promise.all(
     icons.map((name) =>

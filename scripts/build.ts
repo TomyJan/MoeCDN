@@ -12,8 +12,10 @@ for (const f of catalog.entries) {
     await cp('resources/' + f.path, 'dist/' + f.path);
   }
 }
+await mkdir('dist/history', { recursive: true });
 for (const path of [
   '',
+  'history/',
   ...catalog.entries.filter((f) => f.dir).map((f) => f.path),
 ]) {
   const destination = 'dist/' + path + 'index.html';

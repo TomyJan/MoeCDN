@@ -17,8 +17,10 @@ export async function createIndex(
       if (child.name.startsWith('.') || child.isSymbolicLink()) continue;
       if (!child.isDirectory() && !child.isFile()) continue;
       const path = parent + child.name + (child.isDirectory() ? '/' : '');
-      if (path.startsWith('_moecdn/'))
-        throw new Error('资源目录 _moecdn 为程序保留，请重命名该资源目录。');
+      if (path.startsWith('_moecdn/') || path === 'history/')
+        throw new Error(
+          `资源目录 ${child.name} 为程序保留，请重命名该资源目录。`,
+        );
       const info = await stat(join(root, path));
       const entry: Entry = {
         name: child.name,

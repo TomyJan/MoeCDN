@@ -1,5 +1,5 @@
 import { Collapsible } from 'radix-ui';
-import { ChevronRight, FolderOpen } from 'lucide-react';
+import { ChevronRight, Files, ListTree } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { Entry } from '../lib/types.ts';
 import type { Translate } from '../lib/i18n.ts';
@@ -80,9 +80,10 @@ export function DirectoryTree({
         <Button
           id="collapse-tree"
           aria-label={t('collapseAll')}
+          title={t('collapseAll')}
           onClick={() => setExpanded(new Set())}
         >
-          <ChevronRight />
+          <ListTree />
         </Button>
       </div>
       <nav id="tree" aria-label={t('directories')}>
@@ -90,8 +91,9 @@ export function DirectoryTree({
           className="tree-item"
           aria-current={path === '' ? 'page' : undefined}
         >
-          <button className="tree-name root-tree" onClick={() => navigate('')}>
-            <FolderOpen />
+          <span className="tree-disclose" aria-hidden="true" />
+          <button className="tree-name" onClick={() => navigate('')}>
+            <Files />
             <span>{t('allFiles')}</span>
           </button>
         </div>
