@@ -30,6 +30,7 @@ import { AdvancedCopy, type CopyTarget } from './components/AdvancedCopy.tsx';
 import { Preview } from './components/Preview.tsx';
 import { HistoryPage } from './components/HistoryPage.tsx';
 import { SortMenu } from './components/SortMenu.tsx';
+import { DirectoryReadme } from './components/DirectoryReadme.tsx';
 import { useCompactNavigation } from './lib/useCompactNavigation.ts';
 
 function preferences(): { lang?: Language; theme?: Theme } {
@@ -176,6 +177,7 @@ export function App() {
   const normalized =
     path === '' ? '' : path && (path.endsWith('/') ? path : path + '/');
   const isHistory = normalized === 'history/';
+  const readme = catalog?.readmes?.[normalized || '']?.[0];
   const exists =
     normalized !== null &&
     (normalized === '' ||
@@ -617,6 +619,14 @@ export function App() {
                     </span>
                   </div>
                   <div id="load-sentinel" ref={sentinel} aria-hidden="true" />
+                  {!query.trim() && readme && (
+                    <DirectoryReadme
+                      key={readme.path}
+                      file={readme}
+                      navigate={navigate}
+                      t={t}
+                    />
+                  )}
                 </>
               )}
             </main>

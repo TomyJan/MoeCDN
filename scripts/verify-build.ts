@@ -5,7 +5,10 @@ import type { Catalog } from '../src/lib/types.ts';
 const catalog: Catalog = JSON.parse(
   await readFile('dist/_moecdn/catalog.json', 'utf8'),
 );
-for (const file of catalog.entries) {
+for (const file of [
+  ...catalog.entries,
+  ...Object.values(catalog.readmes || {}).flat(),
+]) {
   if (file.dir) {
     assert((await stat('dist/' + file.path)).isDirectory());
     continue;

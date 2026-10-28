@@ -11,6 +11,7 @@ export interface Entry {
 }
 export interface Catalog {
   entries: Entry[];
+  readmes?: Record<string, Entry[]>;
   revision: string;
   builtAt: string;
 }

@@ -1,7 +1,7 @@
 import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { createIndex } from './indexer.ts';
-import type { Catalog } from '../src/lib/types.ts';
+import type { Catalog, Entry } from '../src/lib/types.ts';
 export const icons = [
   'folder-base',
   'javascript',
@@ -47,15 +47,30 @@ export async function prepare(): Promise<Catalog> {
   } catch {
     /* 源码压缩包可构建，时间回退到资源文件自身。 */
   }
+  const readmes: Record<string, Entry[]> = {};
   const entries = await createIndex('resources', {
+    onReadme: (file) => {
+      (readmes[file.parent] ||= []).push(file);
+    },
     modifiedAt: async (path, sha) =>
       metadata[path]?.sha256 === sha && metadata[path].modifiedAt
         ? metadata[path].modifiedAt
         : dates.get(path),
   });
-  const tooLarge = entries.find((f) => (f.size || 0) > 25 * 1024 * 1024);
+  const tooLarge = [...entries, ...Object.values(readmes).flat()].find(
+    (f) => (f.size || 0) > 25 * 1024 * 1024,
+  );
   if (tooLarge) throw new Error(`资源超过 EO 单文件限制：${tooLarge.path}`);
-  const catalog = { entries, revision, builtAt: new Date().toISOString() };
+  for (const files of Object.values(readmes))
+    files.sort(
+      (a, b) => Number(b.name === 'README.md') - Number(a.name === 'README.md'),
+    );
+  const catalog = {
+    entries,
+    readmes,
+    revision,
+    builtAt: new Date().toISOString(),
+  };
   await mkdir('public/_moecdn/icons', { recursive: true });
   await cp('src/assets/favicon.ico', 'public/favicon.ico');
   await cp('data/history.json', 'public/_moecdn/history.json');

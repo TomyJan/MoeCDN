@@ -7,10 +7,12 @@ export async function createIndex(
   root: string,
   options: {
     modifiedAt?: (path: string, sha256: string) => Promise<string | undefined>;
+    onReadme?: (file: Entry) => void;
   } = {},
 ): Promise<Entry[]> {
   const entries: Entry[] = [];
   async function visit(parent: string) {
+    const dates: string[] = [];
     const children = await readdir(join(root, parent), { withFileTypes: true });
     children.sort((a, b) => a.name.localeCompare(b.name, 'en'));
     for (const child of children) {
@@ -49,16 +51,15 @@ export async function createIndex(
           ? info.mtime.toISOString()
           : new Date(time).toISOString();
       }
-      entries.push(entry);
+      if (!entry.dir && /^readme\.md$/i.test(entry.name))
+        options.onReadme?.(entry);
+      else entries.push(entry);
       if (entry.dir) {
-        await visit(path);
-        const dates = entries
-          .filter((f) => f.parent === path)
-          .map((f) => f.modifiedAt)
-          .sort();
-        entry.modifiedAt = dates.at(-1) || '';
+        entry.modifiedAt = await visit(path);
       }
+      dates.push(entry.modifiedAt);
     }
+    return dates.sort().at(-1) || '';
   }
   await visit('');
   return entries;

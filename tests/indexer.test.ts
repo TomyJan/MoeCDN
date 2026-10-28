@@ -16,6 +16,22 @@ async function fixture() {
   return p;
 }
 describe('构建真实资源索引', () => {
+  it('README 独立登记，保留原文件信息而不进入列表和搜索索引', async () => {
+    const root = await fixture();
+    await mkdir(join(root, 'nested'));
+    await writeFile(join(root, 'README.md'), '# 根目录');
+    await writeFile(join(root, 'nested', 'readme.md'), '# 子目录');
+    await writeFile(join(root, 'nested', 'sample.md'), '# 普通文件');
+    const readmes: string[] = [];
+    const entries = await createIndex(root, {
+      onReadme: (file) => readmes.push(file.path),
+    });
+    expect(readmes).toEqual(['nested/readme.md', 'README.md']);
+    expect(entries.map((file) => file.path)).toEqual([
+      'nested/',
+      'nested/sample.md',
+    ]);
+  });
   it('将时区偏移规范化，目录时间采用子项的真实最新时间', async () => {
     const root = await fixture();
     await mkdir(join(root, 'dir'));
