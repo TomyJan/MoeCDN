@@ -1,0 +1,3 @@
+:root { --accent: #00dddd; }
+/* 样式预览 */
+.example { color: var(--accent); padding: 1rem; }

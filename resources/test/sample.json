@@ -1,0 +1,10 @@
+{
+  "name": "MoeCDN",
+  "message": "你好，世界",
+  "enabled": true,
+  "items": [
+    1,
+    2,
+    3
+  ]
+}

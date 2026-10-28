@@ -1,0 +1,5 @@
+name: MoeCDN
+enabled: true
+items:
+  - 中文
+  - English
