@@ -28,6 +28,7 @@ import {
   Menu,
 } from './components/ui.tsx';
 import { DirectoryTree } from './components/DirectoryTree.tsx';
+import { DirectorySidebar } from './components/DirectorySidebar.tsx';
 import { AdvancedCopy, type CopyTarget } from './components/AdvancedCopy.tsx';
 import { Preview } from './components/Preview.tsx';
 import { HistoryPage } from './components/HistoryPage.tsx';
@@ -69,6 +70,9 @@ export function App() {
   );
   const [path, setPath] = useState<string | null>(currentPath);
   const [sort, setSort] = useState<Sort>('name');
+  const [expandedDirectories, setExpandedDirectories] = useState(
+    new Set<string>(),
+  );
   const [searchOpen, setSearchOpen] = useState(false);
   const [limit, setLimit] = useState(100),
     [loadingMore, setLoadingMore] = useState(false);
@@ -82,7 +86,6 @@ export function App() {
     sentinel = useRef<HTMLDivElement>(null),
     main = useRef<HTMLElement>(null),
     navTrigger = useRef<HTMLButtonElement>(null),
-    mobileNavWasOpen = useRef(false),
     searchTrigger = useRef<HTMLButtonElement>(null),
     previewTrigger = useRef<HTMLButtonElement | null>(null),
     direction = useRef(1);
@@ -139,11 +142,6 @@ export function App() {
     return () => removeEventListener('popstate', pop);
   }, []);
   useEffect(() => {
-    if (mobileNavWasOpen.current && !mobileNav && !searchOpen)
-      navTrigger.current?.focus({ preventScroll: true });
-    mobileNavWasOpen.current = mobileNav;
-  }, [mobileNav, searchOpen]);
-  useEffect(() => {
     if (!copy?.closing) return;
     const timeout = setTimeout(
       () => setCopy((value) => (value?.serial === copy.serial ? null : value)),
@@ -194,6 +192,17 @@ export function App() {
   }, [preview]);
   const normalized =
     path === '' ? '' : path && (path.endsWith('/') ? path : path + '/');
+  useEffect(() => {
+    setExpandedDirectories((previous) => {
+      const next = new Set(previous);
+      let current = '';
+      for (const segment of (normalized || '').split('/').filter(Boolean)) {
+        current += segment + '/';
+        next.add(current);
+      }
+      return next;
+    });
+  }, [normalized]);
   const isHistory = normalized === 'history/';
   const readme = catalog?.readmes?.[normalized || '']?.[0];
   const exists =
@@ -401,24 +410,24 @@ export function App() {
         ) : (
           <>
             <div className="layout">
-              {mobileNav && (
-                <button
-                  className="sidebar-backdrop"
-                  aria-label={t('close')}
-                  onClick={() => setMobileNav(false)}
-                />
-              )}
-              <aside
-                id="sidebar"
-                className={'sidebar' + (mobileNav ? ' mobile-open' : '')}
+              <DirectorySidebar
+                open={mobileNav}
+                onOpenChange={setMobileNav}
+                restoreFocus={() => {
+                  if (!searchOpen)
+                    navTrigger.current?.focus({ preventScroll: true });
+                }}
+                t={t}
               >
                 <DirectoryTree
                   entries={catalog.entries}
                   path={normalized || ''}
                   navigate={navigate}
+                  expanded={expandedDirectories}
+                  setExpanded={setExpandedDirectories}
                   t={t}
                 />
-              </aside>
+              </DirectorySidebar>
               <main
                 ref={main}
                 className={isHistory ? 'history-main' : undefined}

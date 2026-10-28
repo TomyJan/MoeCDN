@@ -1,6 +1,6 @@
 import { Collapsible } from 'radix-ui';
 import { ChevronRight, Files, ListTree } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, type Dispatch, type SetStateAction } from 'react';
 import type { Entry } from '../lib/types.ts';
 import type { Translate } from '../lib/i18n.ts';
 import { Button, FileIcon } from './ui.tsx';
@@ -8,14 +8,17 @@ export function DirectoryTree({
   entries,
   path,
   navigate,
+  expanded,
+  setExpanded,
   t,
 }: {
   entries: Entry[];
   path: string;
   navigate: (p: string) => void;
+  expanded: Set<string>;
+  setExpanded: Dispatch<SetStateAction<Set<string>>>;
   t: Translate;
 }) {
-  const [expanded, setExpanded] = useState(new Set<string>());
   const children = useMemo(() => {
     const map = new Map<string, Entry[]>();
     for (const file of entries)
@@ -23,17 +26,6 @@ export function DirectoryTree({
         map.set(file.parent, [...(map.get(file.parent) || []), file]);
     return map;
   }, [entries]);
-  useEffect(() => {
-    setExpanded((previous) => {
-      const next = new Set(previous);
-      let current = '';
-      for (const segment of path.split('/').filter(Boolean)) {
-        current += segment + '/';
-        next.add(current);
-      }
-      return next;
-    });
-  }, [path]);
   function branch(parent: string, depth: number) {
     return children.get(parent)?.map((file) => (
       <Collapsible.Root

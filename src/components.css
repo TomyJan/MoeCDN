@@ -898,7 +898,7 @@
     width: min(300px, 85vw);
     background: var(--panel);
     overflow: auto;
-    z-index: 59;
+    z-index: 71;
     transform: none;
     visibility: visible;
   }
@@ -907,7 +907,7 @@
     position: fixed;
     inset: 0;
     background: #0005;
-    z-index: 58;
+    z-index: 70;
   }
   .file-name img {
     width: 21px;

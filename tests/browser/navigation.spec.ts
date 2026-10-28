@@ -1,5 +1,87 @@
 import { test, expect } from '@playwright/test';
 
+test('手动收起当前目录的祖先后，重开抽屉保持收起状态', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.goto('/lib/jquery/');
+  const trigger = page.locator('#nav-toggle');
+  await trigger.click();
+  await page.getByRole('button', { name: '收起 lib', exact: true }).click();
+  await page.keyboard.press('Escape');
+  await trigger.click();
+  await expect(
+    page.getByRole('button', { name: '展开 lib', exact: true }),
+  ).toBeVisible();
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(
+    page.getByRole('button', { name: '展开 lib', exact: true }),
+  ).toBeVisible();
+});
+
+test('目录展开状态在抽屉重开和响应式切换后保留', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.goto('/');
+  const trigger = page.locator('#nav-toggle');
+  await trigger.click();
+  await page.getByRole('button', { name: '展开 lib', exact: true }).click();
+  await page.keyboard.press('Escape');
+  await trigger.click();
+  await expect(
+    page.getByRole('button', { name: '收起 lib', exact: true }),
+  ).toBeVisible();
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(
+    page.getByRole('button', { name: '收起 lib', exact: true }),
+  ).toBeVisible();
+  await page.setViewportSize({ width: 360, height: 740 });
+  await trigger.click();
+  await expect(
+    page.getByRole('button', { name: '收起 lib', exact: true }),
+  ).toBeVisible();
+});
+
+test('移动目录抽屉限制键盘焦点，关闭后还原背景交互', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.goto('/');
+  const trigger = page.locator('#nav-toggle');
+  await trigger.click();
+  const drawer = page.getByRole('dialog', { name: '目录导航', exact: true });
+  await expect(drawer).toBeVisible();
+  await expect
+    .poll(() =>
+      drawer.evaluate((element) => element.contains(document.activeElement)),
+    )
+    .toBe(true);
+  for (const key of ['Tab', 'Shift+Tab']) {
+    for (let index = 0; index < 12; index++) {
+      await page.keyboard.press(key);
+      expect(
+        await drawer.evaluate((element) =>
+          element.contains(document.activeElement),
+        ),
+      ).toBe(true);
+    }
+  }
+  await expect(
+    page.getByRole('button', { name: '搜索', exact: true }),
+  ).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(trigger).toBeFocused();
+  await page.locator('#open-search').click();
+  await expect(page.locator('#query')).toBeFocused();
+});
+
+test('切换到桌面宽度后关闭移动抽屉并恢复普通目录导航', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.goto('/');
+  const trigger = page.locator('#nav-toggle');
+  await trigger.click();
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(page.locator('.sidebar-backdrop')).toHaveCount(0);
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await page.locator('#tree .tree-name').filter({ hasText: /^lib$/ }).click();
+  await expect(page).toHaveURL('/lib/');
+});
+
 test('浏览器前进后退时收起移动目录抽屉', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 740 });
   await page.goto('/');
