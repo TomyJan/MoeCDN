@@ -30,6 +30,7 @@ import { AdvancedCopy, type CopyTarget } from './components/AdvancedCopy.tsx';
 import { Preview } from './components/Preview.tsx';
 import { HistoryPage } from './components/HistoryPage.tsx';
 import { SortMenu } from './components/SortMenu.tsx';
+import { useCompactNavigation } from './lib/useCompactNavigation.ts';
 
 function preferences(): { lang?: Language; theme?: Theme } {
   try {
@@ -47,6 +48,8 @@ function currentPath() {
   return readDirectoryPath(location.pathname);
 }
 export function App() {
+  const header = useRef<HTMLElement>(null);
+  const compactLinks = useCompactNavigation(header);
   const [catalog, setCatalog] = useState<Catalog | null>(null),
     [error, setError] = useState(false),
     [attempt, setAttempt] = useState(0);
@@ -145,7 +148,7 @@ export function App() {
     let previous = scrollY;
     const scroll = () => {
       const y = scrollY;
-      setBackTop(y > 420);
+      setBackTop(y > 80);
       if (Math.abs(y - previous) > 7) {
         setNavHidden(y > previous && y > 90 && !preview && !mobileNav);
         previous = y;
@@ -271,7 +274,11 @@ export function App() {
     theme === 'system' ? <Monitor /> : theme === 'dark' ? <Moon /> : <Sun />;
   return (
     <div id="app">
-      <header className={'topbar' + (navHidden ? ' nav-hidden' : '')}>
+      <header
+        ref={header}
+        data-compact-links={compactLinks}
+        className={'topbar' + (navHidden ? ' nav-hidden' : '')}
+      >
         <a
           className="brand"
           href="/"
@@ -289,6 +296,8 @@ export function App() {
           <a
             className="nav-link"
             href="https://vov.moe"
+            aria-label={t('home')}
+            title={t('home')}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -298,6 +307,8 @@ export function App() {
           <a
             className="nav-link"
             href="https://blog.tomys.top"
+            aria-label={t('blog')}
+            title={t('blog')}
             target="_blank"
             rel="noopener noreferrer"
           >

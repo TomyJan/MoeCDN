@@ -205,6 +205,38 @@
 .topbar.nav-hidden {
   transform: translateY(-100%);
 }
+.topbar {
+  --nav-text-padding: 10px;
+  gap: 16px;
+}
+.topbar .brand,
+.topbar .top-actions {
+  flex-shrink: 0;
+}
+.topbar .nav-link {
+  position: relative;
+  width: auto;
+  padding: 7px var(--nav-text-padding);
+}
+.topbar .nav-link > svg {
+  display: none;
+}
+.topbar .nav-link > span {
+  display: inline;
+}
+.topbar[data-compact-links='true'] .nav-link {
+  width: 32px;
+  padding: 5px;
+}
+.topbar[data-compact-links='true'] .nav-link > svg {
+  display: block;
+}
+.topbar[data-compact-links='true'] .nav-link > span {
+  position: absolute;
+  width: max-content;
+  visibility: hidden;
+  pointer-events: none;
+}
 .breadcrumb-part {
   display: inline-flex;
   align-items: center;
