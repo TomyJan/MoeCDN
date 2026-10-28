@@ -30,5 +30,4 @@ for (const path of [
   )
     await writeFile(destination, shell);
 }
-await cp('edgeone.json', 'dist/edgeone.json');
 console.log('静态站点已生成：dist/');

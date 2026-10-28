@@ -16,6 +16,11 @@ async function fixture() {
   return p;
 }
 describe('构建真实资源索引', () => {
+  it('项目部署配置只允许维护在仓库根目录', async () => {
+    const root = await fixture();
+    await writeFile(join(root, 'edgeone.json'), '{}');
+    await expect(createIndex(root)).rejects.toThrow('仓库根目录');
+  });
   it('README 独立登记，保留原文件信息而不进入列表和搜索索引', async () => {
     const root = await fixture();
     await mkdir(join(root, 'nested'));

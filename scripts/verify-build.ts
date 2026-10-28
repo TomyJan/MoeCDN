@@ -1,9 +1,16 @@
-import { readFile, stat } from 'node:fs/promises';
+import { access, readFile, stat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import type { Catalog } from '../src/lib/types.ts';
 const catalog: Catalog = JSON.parse(
   await readFile('dist/_moecdn/catalog.json', 'utf8'),
+);
+assert(
+  !(await access('dist/edgeone.json').then(
+    () => true,
+    () => false,
+  )),
+  '部署配置仅保留在仓库根目录，不应发布到 dist/',
 );
 for (const file of [
   ...catalog.entries,
