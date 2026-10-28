@@ -81,6 +81,8 @@ export function App() {
   const serial = useRef(0),
     sentinel = useRef<HTMLDivElement>(null),
     main = useRef<HTMLElement>(null),
+    navTrigger = useRef<HTMLButtonElement>(null),
+    mobileNavWasOpen = useRef(false),
     searchTrigger = useRef<HTMLButtonElement>(null),
     previewTrigger = useRef<HTMLButtonElement | null>(null),
     direction = useRef(1);
@@ -131,10 +133,16 @@ export function App() {
       setLimit(100);
       setPreview(null);
       setCopy(null);
+      setMobileNav(false);
     };
     addEventListener('popstate', pop);
     return () => removeEventListener('popstate', pop);
   }, []);
+  useEffect(() => {
+    if (mobileNavWasOpen.current && !mobileNav && !searchOpen)
+      navTrigger.current?.focus({ preventScroll: true });
+    mobileNavWasOpen.current = mobileNav;
+  }, [mobileNav, searchOpen]);
   useEffect(() => {
     if (!copy?.closing) return;
     const timeout = setTimeout(
@@ -330,6 +338,7 @@ export function App() {
               <span>{t('blog')}</span>
             </a>
             <Button
+              ref={navTrigger}
               id="nav-toggle"
               className="mobile-only"
               aria-label={t('directoryNav')}

@@ -85,6 +85,7 @@ export function SearchDialog({
     return () => {
       observer.disconnect();
       clearTimeout(timeout);
+      setLoadingMore(false);
     };
   }, [open, results, sentinel, matches.length, limit, query, scope, path]);
 

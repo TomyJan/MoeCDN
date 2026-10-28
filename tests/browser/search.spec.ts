@@ -1,5 +1,35 @@
 import { test, expect } from '@playwright/test';
 
+test('关闭进行中的搜索续载后重开，不残留加载提示且仍可续载', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const trigger = page.locator('#open-search');
+  await trigger.click();
+  await page.locator('#query').fill('.js');
+  await expect(page.locator('.search-result')).toHaveCount(100);
+  await page.clock.install({ time: new Date('2026-01-01T00:00:00Z') });
+  await page.clock.pauseAt(new Date('2026-01-01T00:00:01Z'));
+  await page.locator('#search-results').evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  const loading = page.locator('.search-load-status');
+  await expect(loading).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.clock.runFor(500);
+  await trigger.click();
+  await expect(page.locator('#query')).toHaveValue('.js');
+  await expect(page.locator('.search-result')).toHaveCount(100);
+  await expect(loading).toBeHidden();
+  await page.locator('#search-results').evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await expect(loading).toBeVisible();
+  await page.clock.runFor(500);
+  await expect(page.locator('.search-result')).toHaveCount(200);
+  await expect(loading).toBeHidden();
+});
+
 test('标题按钮打开搜索浮层，独立结果递归搜索且背景目录不变', async ({
   page,
 }) => {
