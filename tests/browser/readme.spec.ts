@@ -41,7 +41,16 @@ test('当前目录 README 渲染在列表后，目录导航和原文件可用且
   await expect(page.locator('#empty')).toBeVisible();
   await expect(readme).toHaveCount(0);
   await page.goto('/');
-  await expect(readme).toHaveCount(0);
+  await expect(readme).toContainText('2026-10-28');
+  await expect(readme).toContainText('恢复公开服务');
+  await expect(readme).toContainText('2025-09-14');
+  await expect(readme).toContainText('腾讯云 EdgeOne');
+  await expect(readme).toContainText('Cloudflare');
+  await expect(
+    page
+      .locator('.page-footer')
+      .getByRole('link', { name: '鲁ICP备2021003464号-1', exact: true }),
+  ).toHaveAttribute('href', 'https://beian.miit.gov.cn/');
 });
 
 test('README 清理脚本、危险链接和事件属性，目录标题不会覆盖应用节点', async ({
@@ -70,4 +79,24 @@ test('README 清理脚本、危险链接和事件属性，目录标题不会覆�
   await expect(
     readme.getByRole('link', { name: '锚点', exact: true }),
   ).toHaveAttribute('href', '#readme-root');
+});
+
+test('窄屏根目录 README 和含备案号的页脚完整显示', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto('/');
+  await expect(page.locator('#directory-readme')).toContainText('恢复公开服务');
+  await page.getByRole('button', { name: '切换语言', exact: true }).click();
+  await page
+    .getByRole('menuitemradio', { name: 'English', exact: true })
+    .click();
+  const link = page.locator('.page-footer a').last();
+  await link.scrollIntoViewIfNeeded();
+  const footer = (await page.locator('.page-footer').boundingBox())!;
+  const box = (await link.boundingBox())!;
+  expect(box.y + box.height).toBeLessThanOrEqual(footer.y + footer.height);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
 });

@@ -674,6 +674,14 @@ export function App() {
             >
               {t('history')}
             </a>
+            {' | '}
+            <a
+              href="https://beian.miit.gov.cn/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              鲁ICP备2021003464号-1
+            </a>
           </footer>
         </>
       )}

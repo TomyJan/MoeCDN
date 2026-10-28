@@ -610,9 +610,15 @@
   font-family: MiSans, system-ui, sans-serif;
   gap: 0;
   white-space: pre-wrap;
+  height: auto;
+  min-height: 52px;
+  line-height: 1.8;
+  padding-top: 14px;
+  padding-bottom: 14px;
 }
 .page-footer a {
   font-family: inherit;
+  white-space: nowrap;
 }
 .back-to-top.visible {
   opacity: 1;
