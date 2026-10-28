@@ -1,0 +1,63 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    target-branch: master
+    schedule:
+      interval: daily
+      time: '04:00'
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: '@types/node'
+        versions: ['>=25']
+    groups:
+      react:
+        patterns: ['react', 'react-dom', '@types/react', '@types/react-dom']
+      ui:
+        patterns:
+          [
+            'radix-ui',
+            'lucide-react',
+            'class-variance-authority',
+            'clsx',
+            'tailwind-merge',
+            'material-icon-theme',
+            '@fontsource/*',
+          ]
+      build:
+        patterns:
+          [
+            'vite',
+            '@vitejs/*',
+            'tailwindcss',
+            '@tailwindcss/*',
+            'typescript',
+            'tsx',
+          ]
+      checks:
+        patterns:
+          [
+            'eslint',
+            '@eslint/*',
+            'typescript-eslint',
+            'prettier',
+            'vitest',
+            '@vitest/*',
+            '@playwright/*',
+          ]
+    commit-message:
+      prefix: 'chore(依赖)'
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: master
+    schedule:
+      interval: weekly
+      day: monday
+      time: '04:00'
+      timezone: Asia/Shanghai
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: 'ci(依赖)'
