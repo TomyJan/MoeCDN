@@ -1,0 +1,11 @@
+design/prototype/
+design/licenses/
+design/*.md
+resources/
+public/
+dist/
+node_modules/
+pnpm-lock.yaml
+playwright-report/
+test-results/
+.generated/

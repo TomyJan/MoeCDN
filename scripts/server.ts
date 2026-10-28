@@ -1,0 +1,107 @@
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from 'node:http';
+import { readFile, stat } from 'node:fs/promises';
+import { resolve, relative, extname, sep } from 'node:path';
+import { readDirectoryPath } from '../src/lib/catalog.ts';
+const mime: Record<string, string> = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.md': 'text/plain; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.gif': 'image/gif',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.ico': 'image/x-icon',
+  '.webp': 'image/webp',
+  '.mp3': 'audio/mpeg',
+  '.mp4': 'video/mp4',
+  '.wav': 'audio/wav',
+  '.ogg': 'audio/ogg',
+  '.webm': 'video/webm',
+  '.pdf': 'application/pdf',
+  '.woff2': 'font/woff2',
+  '.woff': 'font/woff',
+  '.ttf': 'font/ttf',
+};
+async function send(file: string, req: IncomingMessage, res: ServerResponse) {
+  const data = await readFile(file);
+  res.setHeader(
+    'Content-Type',
+    mime[extname(file).toLowerCase()] || 'application/octet-stream',
+  );
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  if (new URL(req.url || '/', 'http://localhost').searchParams.has('download'))
+    res.setHeader('Content-Disposition', 'attachment');
+  const range = req.headers.range?.match(/^bytes=(\d+)-(\d*)$/);
+  if (range) {
+    const start = Number(range[1]),
+      end = Math.min(
+        range[2] ? Number(range[2]) : data.length - 1,
+        data.length - 1,
+      );
+    if (start > end) {
+      res.writeHead(416, { 'Content-Range': `bytes */${data.length}` });
+      res.end();
+      return;
+    }
+    res.writeHead(206, {
+      'Content-Range': `bytes ${start}-${end}/${data.length}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': end - start + 1,
+    });
+    res.end(req.method === 'HEAD' ? undefined : data.subarray(start, end + 1));
+  } else {
+    res.setHeader('Content-Length', data.length);
+    res.end(req.method === 'HEAD' ? undefined : data);
+  }
+}
+export function resourceMiddleware(root: string) {
+  const absolute = resolve(root);
+  return (req: IncomingMessage, res: ServerResponse, next: () => void) => {
+    void (async () => {
+      const path = readDirectoryPath(
+        new URL(req.url || '/', 'http://localhost').pathname,
+      );
+      if (path === null || path.split('/').some((p) => p.startsWith('.')))
+        return next();
+      const file = resolve(absolute, path),
+        rel = relative(absolute, file);
+      if (rel === '..' || rel.startsWith('..' + sep)) return next();
+      const info = await stat(file).catch(() => null);
+      if (info?.isFile()) return send(file, req, res);
+      if (root === 'dist') {
+        if (info?.isDirectory() && !path.endsWith('/') && path) {
+          res.writeHead(308, { Location: '/' + path + '/' });
+          res.end();
+          return;
+        }
+        if (!path || path.endsWith('/'))
+          return send(resolve(root, '_moecdn/app.html'), req, res);
+      }
+      next();
+    })().catch((error) => {
+      console.error(error);
+      res.statusCode = 500;
+      res.end('Internal server error');
+    });
+  };
+}
+export function serve(port: number) {
+  const middleware = resourceMiddleware('dist');
+  return createServer((req, res) =>
+    middleware(req, res, () => {
+      res.statusCode = 404;
+      res.end('Not found');
+    }),
+  ).listen(port, '127.0.0.1', () => console.log(`http://127.0.0.1:${port}/`));
+}
