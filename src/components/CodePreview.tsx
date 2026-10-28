@@ -75,7 +75,10 @@ export default function CodePreview({
                 {index + 1}
               </span>
             )}
-            <span className="line-content">{line}</span>
+            <span className="line-content">
+              {line}
+              {index < lines.length - 1 ? '\n' : null}
+            </span>
           </span>
         ))}
       </code>

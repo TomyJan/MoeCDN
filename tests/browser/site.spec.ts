@@ -312,8 +312,8 @@ test('源码开关默认开启，分别控制高亮、行号和长行换行', as
   }
   const lines = page.locator('.code-line');
   await expect(lines).toHaveCount(4);
-  expect(await page.locator('.line-content').allTextContents()).toEqual(
-    source.split('\n'),
+  expect((await page.locator('.line-content').allTextContents()).join('')).toBe(
+    source,
   );
   await expect(lines.nth(1).locator('.hljs-comment')).toContainText('安全预览');
   const line = page.locator('.line-content').last();
@@ -327,8 +327,8 @@ test('源码开关默认开启，分别控制高亮、行号和长行换行', as
   await expect(page.locator('.line-number')).toHaveCount(4);
   await page.getByRole('button', { name: '显示行号: 开', exact: true }).click();
   await expect(page.locator('.line-number')).toHaveCount(0);
-  expect(await page.locator('.line-content').allTextContents()).toEqual(
-    source.split('\n'),
+  expect((await page.locator('.line-content').allTextContents()).join('')).toBe(
+    source,
   );
   await page.getByRole('button', { name: '语法高亮: 关', exact: true }).click();
   await expect(lines.nth(1).locator('.hljs-comment')).toContainText('安全预览');

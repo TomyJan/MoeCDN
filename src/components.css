@@ -739,6 +739,7 @@
 .code-preview .line-content {
   display: block;
   flex: 1;
+  min-height: 1.8em;
   white-space: pre;
   overflow-wrap: normal;
   word-break: normal;
@@ -746,9 +747,6 @@
 .code-preview[data-wrap='true'] .line-content {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-}
-.code-preview .line-content:empty::before {
-  content: '\200b';
 }
 .code-preview .line-content:first-child {
   padding-left: 24px;
