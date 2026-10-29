@@ -218,7 +218,13 @@ test('弹窗预览、渲染对照和元数据，不执行 HTML 脚本', async ({
   await expect(page.locator('.code-preview')).not.toBeEmpty();
   await page.getByRole('button', { name: '对照', exact: true }).click();
   await expect(page.locator('.render-pane')).toBeVisible();
-  await expect(page.locator('.render-pane')).toHaveAttribute('sandbox', '');
+  expect(
+    await page
+      .locator('.render-pane')
+      .evaluate((frame: HTMLIFrameElement) =>
+        frame.sandbox.contains('allow-scripts'),
+      ),
+  ).toBe(false);
   await expect(page.locator('#preview-properties')).not.toContainText('创建');
   await page.getByRole('button', { name: '关闭', exact: true }).click();
   await page.goto('/web-static/public/wordpress-argon-theme/latest/');

@@ -26,6 +26,7 @@ import { sourceFormat } from '../lib/syntax.ts';
 import { preparePreviewDocument } from '../lib/markdown.ts';
 import { Button, CopyButton, FileIcon } from './ui.tsx';
 import { PreviewBoundary } from './PreviewBoundary.tsx';
+import { DocumentPreview } from './DocumentPreview.tsx';
 
 const PdfPreview = lazy(() => import('./PdfPreview.tsx'));
 const CodePreview = lazy(() => import('./CodePreview.tsx'));
@@ -250,12 +251,7 @@ export function Preview({
           </div>
         )}
         {mode !== 'source' && document && (
-          <iframe
-            className="render-pane"
-            sandbox=""
-            title={file.name}
-            srcDoc={rendered}
-          />
+          <DocumentPreview title={file.name} html={rendered} />
         )}
       </>
     );

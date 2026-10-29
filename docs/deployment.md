@@ -55,7 +55,7 @@ MiSans 沿用确认设计中的字体分片，Source Code Pro 从依赖包发布
 
 `edgeone.json` 已为所有路径配置 `Access-Control-Allow-Origin: *`，允许任意网站跨域读取公共资源，适用于脚本、字体、`fetch` 和 SRI 引用。本地开发资源与生产预览服务同样返回此响应头；平台实际响应在部署后验证。
 
-HTML 与 Markdown 预览使用不授予脚本权限的 sandbox iframe，Markdown 额外经 DOMPurify 清理。正文大于预览上限或不支持的类型提供打开原文件和下载；原始文件的可访问性不受预览上限影响。文件预览不会自动执行文件内脚本。
+HTML 与 Markdown 预览使用不授予脚本权限的 sandbox iframe，Markdown 额外经 DOMPurify 清理。文内锚点由父页面处理，仅滚动预览正文，不产生额外浏览历史。正文大于预览上限或不支持的类型提供打开原文件和下载；原始文件的可访问性不受预览上限影响。文件预览不会自动执行文件内脚本。
 
 PDF 使用按需加载的 PDF.js 在 canvas 上逐页绘制，靠近视口时才渲染页面，不使用浏览器内置 PDF 插件，也不接入 PDF 脚本或交互动作。Worker、字符映射、字体和解码器均随站点发布。
 
