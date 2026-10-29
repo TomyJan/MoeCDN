@@ -1,5 +1,62 @@
 import { test, expect } from '@playwright/test';
 
+for (const kind of ['area', 'xlink']) {
+  test(`${kind} 链接保留预览与目录历史，锚点和协议检查仍生效`, async ({
+    page,
+  }) => {
+    const link = (href: string, name: string) =>
+      kind === 'area'
+        ? `<img data-hit="${name}" src="sample.png" width="100" height="100" usemap="#map-${name}"><map name="map-${name}"><area shape="rect" coords="0,0,100,100" href="${href}" alt="${name}"></map>`
+        : `<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><a xlink:href="${href}"><rect data-hit="${name}" width="100" height="100" fill="teal"/></a></svg>`;
+    await page.route('**/test/sample.html', (route) =>
+      route.fulfill({
+        contentType: 'text/html',
+        body:
+          link('sample.json', 'file') +
+          link('#target', 'fragment') +
+          link('javascript:parent.__linkExecuted=true', 'script') +
+          '<div style="height:1600px"></div><h2 id="target">Target</h2>',
+      }),
+    );
+    await page.goto('/');
+    await page
+      .getByRole('button', { name: '打开文件夹 test', exact: true })
+      .click();
+    const length = await page.evaluate(() => history.length);
+    await page
+      .getByRole('button', { name: '预览文件 sample.html', exact: true })
+      .click();
+    const frame = page.frameLocator('.render-pane');
+    const popup = page.waitForEvent('popup', { timeout: 3000 });
+    await frame
+      .locator('[data-hit="file"]')
+      .click({ position: { x: 20, y: 20 } });
+    const opened = await popup;
+    await expect(opened).toHaveURL('/test/sample.json');
+    expect(await opened.evaluate(() => window.opener)).toBeNull();
+    await opened.close();
+    await expect(frame.locator('[data-hit="file"]')).toBeVisible();
+    await frame
+      .locator('[data-hit="script"]')
+      .click({ position: { x: 20, y: 20 } });
+    expect(await page.evaluate(() => '__linkExecuted' in window)).toBe(false);
+    expect(page.context().pages()).toHaveLength(1);
+    await frame
+      .locator('[data-hit="fragment"]')
+      .click({ position: { x: 20, y: 20 } });
+    await expect
+      .poll(() => frame.locator('body').evaluate(() => scrollY))
+      .toBeGreaterThan(0);
+    expect(await page.evaluate(() => history.length)).toBe(length);
+    await page.getByRole('button', { name: '关闭', exact: true }).click();
+    await expect(page.locator('#preview-dialog')).toBeHidden();
+    await page.goBack();
+    await expect(page).toHaveURL('/');
+    await page.goForward();
+    await expect(page).toHaveURL('/test/');
+  });
+}
+
 test('预览普通链接支持修饰键和鼠标中键，危险协议保持禁用', async ({ page }) => {
   await page.route('**/test/sample.html', (route) =>
     route.fulfill({

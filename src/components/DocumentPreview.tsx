@@ -29,12 +29,22 @@ export function DocumentPreview({
         // 原始 HTML 可用表单命名遮蔽 DOM 成员；调用父页面的原生方法。
         let link: Element | null;
         try {
-          link = Element.prototype.closest.call(event.target, 'a[href]');
+          link = Element.prototype.closest.call(
+            event.target,
+            'a[*|href], area[href]',
+          );
         } catch {
           return;
         }
         const href = link
-          ? Element.prototype.getAttribute.call(link, 'href')?.trim()
+          ? (
+              Element.prototype.getAttribute.call(link, 'href') ??
+              Element.prototype.getAttributeNS.call(
+                link,
+                'http://www.w3.org/1999/xlink',
+                'href',
+              )
+            )?.trim()
           : null;
         if (href == null) return;
         const fragment = href.startsWith('#')
