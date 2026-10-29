@@ -24,21 +24,24 @@ test('更新历史独立页面支持直达刷新，读取历史记录并返回�
   await expect(page.locator('#history')).toContainText('2022-05-28');
   for (const width of [1280, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
-    expect(
-      await page
-        .locator('.history-entry')
-        .first()
-        .evaluate((entry) => {
-          const date = entry.querySelector('time')!.getBoundingClientRect();
-          const item = entry.querySelector('li')!.getBoundingClientRect();
-          return (
-            date.bottom <= item.top &&
-            Math.abs(date.left - item.left) <= 1 &&
-            date.left - entry.getBoundingClientRect().left >= 20 &&
-            document.documentElement.scrollWidth <= innerWidth
-          );
-        }),
-    ).toBe(true);
+    // 导航压缩布局由 ResizeObserver 更新，等待它完成再检查同帧几何。
+    await expect
+      .poll(() =>
+        page
+          .locator('.history-entry')
+          .first()
+          .evaluate((entry) => {
+            const date = entry.querySelector('time')!.getBoundingClientRect();
+            const item = entry.querySelector('li')!.getBoundingClientRect();
+            return (
+              date.bottom <= item.top &&
+              Math.abs(date.left - item.left) <= 1 &&
+              date.left - entry.getBoundingClientRect().left >= 20 &&
+              document.documentElement.scrollWidth <= innerWidth
+            );
+          }),
+      )
+      .toBe(true);
   }
   await page.setViewportSize({ width: 1280, height: 900 });
   const data = await request.get('/_moecdn/history.json');
