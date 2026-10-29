@@ -1,5 +1,7 @@
 # 技术选型与部署约束
 
+> 本文归档 2026-10-28 的设计阶段约定，不表示当前实现或部署状态。当前说明见[部署与资源维护](../docs/deployment.md)，演变过程见[实施记录](../docs/implementation.md)。
+
 ## 正式应用方向
 
 采用 React、TypeScript、Vite、Tailwind CSS 与 shadcn/ui 作为正式实现方向。shadcn/ui 用于可维护的组件源码和交互基础，外观以本次灰阶设计为准，不直接沿用默认主题。文件图标使用 Material Icon Theme，操作图标使用 Lucide。

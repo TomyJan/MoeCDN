@@ -23,7 +23,7 @@ GitHub Actions 只检查并保存构建产物，不持有发布凭据。平台�
 
 项目构建与部署配置只在仓库根目录维护，不放入 `resources/` 或复制到 `dist/`。EO 从仓库根目录读取 `edgeone.json`；资源根目录出现同名配置时构建会明确失败，发布验证也会检查部署配置未被公开。
 
-站点更新历史维护在 `data/history.json`，每项包含 `date`、可选 `note` 和 `changes` 数组，支持行内 Markdown。该文件由旧日志完整迁移，并由构建发布到 `/_moecdn/history.json`；访问 `/history/` 查看独立页面。站点图标源文件为 `src/assets/favicon.ico`，发布在 `/favicon.ico`，不进入资源列表。
+站点更新历史维护在 `data/history.json`，每项包含 `date`、可选 `note` 和 `changes` 数组；`changes` 中的条目支持行内 Markdown，`note` 按纯文本显示。该文件由旧日志完整迁移，并由构建发布到 `/_moecdn/history.json`；访问 `/history/` 查看独立页面。站点图标源文件为 `src/assets/favicon.ico`，发布在 `/favicon.ico`，不进入资源列表。
 
 `public/` 是生成目录，不能手动维护；`dist/` 也是生成目录，每次构建清空并重新生成。程序源码、设计归档、锁文件和资源元数据均不进入网站资源列表。
 
@@ -31,7 +31,7 @@ GitHub Actions 只检查并保存构建产物，不持有发布凭据。平台�
 
 在任意 `resources/` 子目录放置 `README.md`，构建会单独登记目录说明，页面在完整列表下方渲染当前目录的 README。支持 Markdown 标题目录、表格、代码块和相对图片 / 链接；目录内链接保留站内导航，原文件与外链在新标签页打开。脚本、事件属性、危险链接等内容会清理。
 
-README 文件名不区分大小写，同一目录优先使用 `README.md`；这些文件均不进入列表、统计或搜索索引，但仍按原字节发布并接受哈希验证。搜索时隐藏目录说明。根目录网页说明维护在 `resources/README.md`，仓库根目录的 `README.md` 仍是开发说明。
+README 文件名不区分大小写，同一目录优先使用 `README.md`；这些文件均不进入列表、统计或搜索索引，但仍按原字节发布并接受哈希验证。搜索使用独立浮层，不改变背景目录列表和 README。根目录网页说明维护在 `resources/README.md`，仓库根目录的 `README.md` 仍是开发说明。
 
 网站 `/test/` 对应 `resources/test/`，提供可直接查看和下载的多格式小样例；字体样例的授权文件与其一起保留。
 
@@ -51,7 +51,7 @@ README 文件名不区分大小写，同一目录优先使用 `README.md`；这�
 
 MiSans 和 Source Code Pro 通过 `<link>` 引用 `web-static/public/font/` 下的 CSS，字体文件分别由小米 CDN 和 npmmirror 提供。Source Code Pro 许可随字体 CSS 发布，其他第三方许可见设计说明及 `/_moecdn/licenses/`；旧站资源遵循其各自原有许可。
 
-文件图标使用 VS Code 的 Material Icon Theme（并非 VS Code 内置的默认文件主题）。构建时读取依赖包的完整文件名与扩展名关联，优先匹配专用文件名及复合扩展名，再匹配普通扩展名；只发布当前资源实际使用的图标，并随网站主题切换浅色变体。新增格式无需手写前端映射。
+文件图标使用 VS Code 的 Material Icon Theme（并非 VS Code 内置的默认文件主题）。构建时读取依赖包的完整文件名与扩展名关联，优先匹配专用文件名及复合扩展名，再匹配普通扩展名；按当前资源需求复制所需图标及默认图标，并随网站主题切换浅色变体。复用 `public/` 生成目录时，其中可能保留先前复制的旧图标。新增格式无需手写前端映射。
 
 `edgeone.json` 已为所有路径配置 `Access-Control-Allow-Origin: *`，允许任意网站跨域读取公共资源，适用于脚本、字体、`fetch` 和 SRI 引用。本地开发资源与生产预览服务同样返回此响应头；平台实际响应在部署后验证。
 
@@ -72,4 +72,4 @@ pnpm test:e2e
 pnpm preview
 ```
 
-预览服务只监听本机地址，默认端口显示在命令输出中。测试通过真实构建产物检查资源原字节、目录路由、搜索和弹窗交互；`pnpm verify:build` 会逐个核对发布文件的 SHA-256。
+预览服务只监听本机地址，默认端口显示在命令输出中。测试通过真实构建产物检查资源原字节、目录路由、搜索和弹窗交互；`pnpm verify:build` 会逐个核对索引中原始资源（含目录 README）的 SHA-256，范围不包括全部 `dist/` 生成资产。
