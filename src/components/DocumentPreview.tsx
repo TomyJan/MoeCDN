@@ -19,15 +19,11 @@ export function DocumentPreview({
       unbind = () => {};
       currentDocument = document;
       if (!document) return;
-      const followFragment: EventListener = (click) => {
+      const followLink: EventListener = (click) => {
         const event = click as MouseEvent;
         if (
           event.defaultPrevented ||
-          event.button !== 0 ||
-          event.ctrlKey ||
-          event.metaKey ||
-          event.shiftKey ||
-          event.altKey
+          event.button !== (event.type === 'auxclick' ? 1 : 0)
         )
           return;
         // 原始 HTML 可用表单命名遮蔽 DOM 成员；调用父页面的原生方法。
@@ -40,14 +36,36 @@ export function DocumentPreview({
         const href = link
           ? Element.prototype.getAttribute.call(link, 'href')?.trim()
           : null;
-        if (!href) return;
+        if (href == null) return;
         const fragment = href.startsWith('#')
           ? href.slice(1)
           : href.startsWith('about:srcdoc#')
             ? href.slice('about:srcdoc#'.length)
             : null;
-        if (fragment === null) return;
         event.preventDefault();
+        if (fragment === null) {
+          // 从父页面打开普通链接，避免 iframe 导航写入目录的联合历史。
+          try {
+            const base = Object.getOwnPropertyDescriptor(
+              Node.prototype,
+              'baseURI',
+            )!.get!.call(link);
+            const url = new URL(href, base);
+            if (['http:', 'https:', 'mailto:', 'tel:'].includes(url.protocol))
+              window.open(url.href, '_blank', 'noopener');
+          } catch {
+            /* 无效地址保持当前预览。 */
+          }
+          return;
+        }
+        if (
+          event.button !== 0 ||
+          event.ctrlKey ||
+          event.metaKey ||
+          event.shiftKey ||
+          event.altKey
+        )
+          return;
         let id = fragment;
         try {
           id = decodeURIComponent(fragment);
@@ -84,17 +102,42 @@ export function DocumentPreview({
           else Element.prototype.scrollIntoView.call(target);
         }
       };
-      EventTarget.prototype.addEventListener.call(
-        document,
-        'click',
-        followFragment,
-      );
-      unbind = () =>
-        EventTarget.prototype.removeEventListener.call(
-          document,
-          'click',
-          followFragment,
-        );
+      const forwardEscape: EventListener = (keydown) => {
+        const event = keydown as KeyboardEvent;
+        if (
+          event.key !== 'Escape' ||
+          event.defaultPrevented ||
+          event.isComposing
+        )
+          return;
+        // iframe 键盘事件不会冒泡到外层，让弹窗处理关闭及焦点恢复。
+        if (
+          !element.dispatchEvent(
+            new KeyboardEvent('keydown', {
+              key: 'Escape',
+              code: 'Escape',
+              bubbles: true,
+              cancelable: true,
+            }),
+          )
+        )
+          event.preventDefault();
+      };
+      const listeners: [string, EventListener][] = [
+        ['click', followLink],
+        ['auxclick', followLink],
+        ['keydown', forwardEscape],
+      ];
+      for (const [type, listener] of listeners)
+        EventTarget.prototype.addEventListener.call(document, type, listener);
+      unbind = () => {
+        for (const [type, listener] of listeners)
+          EventTarget.prototype.removeEventListener.call(
+            document,
+            type,
+            listener,
+          );
+      };
     };
     // load 可能被慢图片拖延；每帧只比较 Document 身份，换文档时提前绑定。
     let animation = 0;

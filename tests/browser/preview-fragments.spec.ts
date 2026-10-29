@@ -1,5 +1,38 @@
 import { test, expect } from '@playwright/test';
 
+test('预览普通链接支持修饰键和鼠标中键，危险协议保持禁用', async ({ page }) => {
+  await page.route('**/test/sample.html', (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: '<form name="baseURI"></form><a href="sample.json">Local</a><a href="javascript:parent.__linkExecuted=true">Script</a><a href="data:text/html,unsafe">Data</a><a href="http://[">Invalid</a>',
+    }),
+  );
+  await page.goto('/test/');
+  await page
+    .getByRole('button', { name: '预览文件 sample.html', exact: true })
+    .click();
+  const frame = page.frameLocator('.render-pane');
+  for (const options of [
+    { modifiers: ['ControlOrMeta'] as 'ControlOrMeta'[] },
+    { button: 'middle' as const },
+  ]) {
+    const popup = page.waitForEvent('popup', { timeout: 3000 });
+    await frame
+      .getByRole('link', { name: 'Local', exact: true })
+      .click(options);
+    const opened = await popup;
+    await expect(opened).toHaveURL('/test/sample.json');
+    await opened.close();
+  }
+  for (const name of ['Script', 'Data', 'Invalid'])
+    await frame.getByRole('link', { name, exact: true }).click();
+  expect(await page.evaluate(() => '__linkExecuted' in window)).toBe(false);
+  expect(page.context().pages()).toHaveLength(1);
+  await expect(
+    frame.getByRole('link', { name: 'Local', exact: true }),
+  ).toBeVisible();
+});
+
 test('空锚点忽略空名称目标并回顶，Tab 从文档开头继续', async ({ page }) => {
   await page.route('**/test/sample.html', (route) =>
     route.fulfill({
@@ -107,6 +140,88 @@ test('HTML 文内跳转后 Tab 从目标位置继续', async ({ page }) => {
 });
 
 for (const extension of ['html', 'md']) {
+  test(`${extension} 普通链接新开标签且不干扰目录前进后退`, async ({
+    page,
+    context,
+  }) => {
+    await page.route(`**/test/sample.${extension}`, (route) =>
+      route.fulfill({
+        contentType: 'text/plain',
+        body:
+          extension === 'html'
+            ? '<a href="sample.json">Local</a> <a href="https://example.com/preview-link" target="_self">External</a>'
+            : '[Local](sample.json) · [External](https://example.com/preview-link)',
+      }),
+    );
+    await context.route('https://example.com/preview-link', (route) =>
+      route.fulfill({ contentType: 'text/html', body: '<h1>External</h1>' }),
+    );
+    await page.goto('/');
+    await page
+      .getByRole('button', { name: '打开文件夹 test', exact: true })
+      .click();
+    const length = await page.evaluate(() => history.length);
+    await page
+      .getByRole('button', {
+        name: `预览文件 sample.${extension}`,
+        exact: true,
+      })
+      .click();
+    const frame = page.frameLocator('.render-pane');
+    for (const [label, path] of [
+      ['Local', '/test/sample.json'],
+      ['External', 'https://example.com/preview-link'],
+    ]) {
+      const popup = page.waitForEvent('popup', { timeout: 3000 });
+      await frame.getByRole('link', { name: label, exact: true }).click();
+      const opened = await popup;
+      await expect(opened).toHaveURL(path);
+      expect(await opened.evaluate(() => window.opener)).toBeNull();
+      await opened.close();
+      await expect(
+        frame.getByRole('link', { name: 'Local', exact: true }),
+      ).toBeVisible();
+      expect(await page.evaluate(() => history.length)).toBe(length);
+    }
+    await page.getByRole('button', { name: '关闭', exact: true }).click();
+    await expect(page.locator('#preview-dialog')).toBeHidden();
+    await page.goBack();
+    await expect(page).toHaveURL('/');
+    await page.goForward();
+    await expect(page).toHaveURL('/test/');
+  });
+
+  test(`${extension} 正文获得焦点后 Esc 关闭预览并恢复列表焦点`, async ({
+    page,
+  }) => {
+    await page.route(`**/test/sample.${extension}`, (route) =>
+      route.fulfill({
+        contentType: 'text/plain',
+        body:
+          extension === 'html'
+            ? '<a href="#target">Jump</a><h2 id="target">Target</h2>'
+            : '[Jump](#target)\n\n## Target',
+      }),
+    );
+    await page.goto('/test/');
+    const trigger = page.getByRole('button', {
+      name: `预览文件 sample.${extension}`,
+      exact: true,
+    });
+    await trigger.click();
+    await page
+      .frameLocator('.render-pane')
+      .getByRole('link', { name: 'Jump' })
+      .click();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#preview-dialog')).toBeHidden();
+    await expect(trigger).toBeFocused();
+    await trigger.click();
+    await expect(
+      page.frameLocator('.render-pane').getByRole('link', { name: 'Jump' }),
+    ).toBeVisible();
+  });
+
   test(`${extension} 连续跳转文内锚点后关闭预览，一次后退返回上一目录`, async ({
     page,
   }) => {
