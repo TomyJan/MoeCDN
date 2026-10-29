@@ -20,15 +20,18 @@ export function DocumentPreview({
         )
           return;
         // 原始 HTML 可用表单命名遮蔽 DOM 成员；调用父页面的原生方法。
-        let link: Element | null;
-        try {
-          link = Element.prototype.closest.call(
-            event.target,
-            'a[*|href], area[href]',
-          );
-        } catch {
-          return;
-        }
+        // Shadow DOM 会重定向 target，事件路径保留开放组件内的实际链接。
+        const link = Event.prototype.composedPath.call(event).find((node) => {
+          try {
+            return Element.prototype.matches.call(
+              node,
+              'a[*|href], area[href]',
+            );
+          } catch {
+            // 路径也包含文本、ShadowRoot、Document 和 Window。
+            return false;
+          }
+        }) as Element | undefined;
         const href = link
           ? (
               Element.prototype.getAttribute.call(link, 'href') ??

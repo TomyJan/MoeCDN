@@ -1,5 +1,69 @@
 import { test, expect, type Page } from '@playwright/test';
 
+for (const nested of [false, true]) {
+  test(`${nested ? '嵌套网页多层' : '网页'} Shadow DOM 内链接使用实际点击目标`, async ({
+    page,
+  }) => {
+    const links =
+      '<a href="sample.json"><span>Shadow Next</span></a><a href="javascript:top.__shadowScriptRan=true">Unsafe</a><a href="#target">Jump</a>';
+    const shadow = `<div><template shadowrootmode="open">${nested ? `<section><template shadowrootmode="open">${links}</template></section>` : links}</template></div>`;
+    const body =
+      (nested ? `<a href="sample.txt">${shadow}</a>` : shadow) +
+      '<div style="height:1600px"></div><h2 id="target">Target</h2><button>After</button>';
+    await page.route('**/test/sample.html', (route) =>
+      route.fulfill({
+        contentType: 'text/html',
+        body: nested ? '<iframe src="shadow-child.html"></iframe>' : body,
+      }),
+    );
+    await page.route('**/test/shadow-child.html', (route) =>
+      route.fulfill({ contentType: 'text/html', body }),
+    );
+    await page.goto('/');
+    await page
+      .getByRole('button', { name: '打开文件夹 test', exact: true })
+      .click();
+    const length = await page.evaluate(() => history.length);
+    const trigger = page.getByRole('button', {
+      name: '预览文件 sample.html',
+      exact: true,
+    });
+    await trigger.click();
+    const root = page.frameLocator('.render-pane');
+    const content = nested ? root.frameLocator('iframe') : root;
+    const popup = page.waitForEvent('popup', { timeout: 3000 });
+    await content
+      .getByRole('link', { name: 'Shadow Next', exact: true })
+      .click();
+    const opened = await popup;
+    await expect(opened).toHaveURL('/test/sample.json');
+    expect(await opened.evaluate(() => window.opener)).toBeNull();
+    await opened.close();
+    await expect(
+      content.getByRole('link', { name: 'Shadow Next', exact: true }),
+    ).toBeVisible();
+    await content.getByRole('link', { name: 'Unsafe', exact: true }).click();
+    expect(await page.evaluate(() => '__shadowScriptRan' in window)).toBe(
+      false,
+    );
+    expect(page.context().pages()).toHaveLength(1);
+    await content.getByRole('link', { name: 'Jump', exact: true }).click();
+    await expect
+      .poll(() => content.locator('body').evaluate(() => scrollY))
+      .toBeGreaterThan(0);
+    await page.keyboard.press('Tab');
+    await expect(content.getByRole('button', { name: 'After' })).toBeFocused();
+    expect(await page.evaluate(() => history.length)).toBe(length);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#preview-dialog')).toBeHidden();
+    await expect(trigger).toBeFocused();
+    await page.goBack();
+    await expect(page).toHaveURL('/');
+    await page.goForward();
+    await expect(page).toHaveURL('/test/');
+  });
+}
+
 async function embeddedPreview(page: Page, kind: string) {
   const body =
     '<button>Inside</button><a href="sample.json">Next</a><a href="#target">Jump</a><div style="height:1600px"></div><h2 id="target">Target</h2><a href="#">Top</a><script>top.__embeddedScriptRan=true</script>';
