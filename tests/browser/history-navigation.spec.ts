@@ -27,6 +27,73 @@ async function searchFolder(page: Page, query: string, name: string) {
     .click();
 }
 
+for (const entry of [
+  {
+    path: '/history/',
+    response: '**/_moecdn/history.json',
+    content: '#history',
+  },
+  {
+    path: '/test/',
+    response: '**/test/README.md',
+    content: '#directory-readme .readme-body',
+  },
+]) {
+  test(`${entry.path} 窗口变高后等待异步正文，再把返回位置限制到可达高度`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 740 });
+    await page.goto(entry.path);
+    await expect(page.locator(entry.content)).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    await page.locator('.page-footer').scrollIntoViewIfNeeded();
+    await expect
+      .poll(() =>
+        page
+          .locator('#directory-readme img')
+          .evaluateAll((images) =>
+            images.every((image) => (image as HTMLImageElement).complete),
+          ),
+      )
+      .toBe(true);
+    await page.evaluate(() =>
+      scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: 'instant',
+      }),
+    );
+    const saved = await page.evaluate(() => scrollY);
+    expect(saved).toBeGreaterThan(500);
+    await searchFolder(page, 'jquery', 'jquery');
+    await page.setViewportSize({ width: 1280, height: 1100 });
+    let release!: () => void;
+    const wait = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route(entry.response, async (route) => {
+      await wait;
+      await route.continue();
+    });
+    await page.goBack();
+    await expect(page).toHaveURL(entry.path);
+    await expect(page.locator(entry.content)).toHaveCount(0);
+    release();
+    await expect(page.locator(entry.content)).toBeVisible();
+    await expect
+      .poll(async () =>
+        page.evaluate(
+          () =>
+            scrollY > 0 &&
+            Math.abs(
+              scrollY - (document.documentElement.scrollHeight - innerHeight),
+            ) <= 1,
+        ),
+      )
+      .toBe(true);
+    expect(await page.evaluate(() => scrollY)).toBeLessThan(saved);
+  });
+}
+
 test('普通 HTTP 域名下可打开目录并导航', async ({ page, baseURL }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -44,6 +111,7 @@ test('普通 HTTP 域名下可打开目录并导航', async ({ page, baseURL }) 
   await expect(page).toHaveURL('http://moecdn.test/');
   await expect(page.locator('#rows')).toContainText('lib');
   expect(errors).toEqual([]);
+  await page.unrouteAll({ behavior: 'wait' });
 });
 
 test('后退到异步加载的更新历史，内容加载后恢复滚动位置', async ({ page }) => {

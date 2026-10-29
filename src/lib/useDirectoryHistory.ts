@@ -78,6 +78,9 @@ export function useDirectoryHistory(ready: boolean) {
     if (!ready || !target) return;
     const stop = () => {
       observer.disconnect();
+      mutations.disconnect();
+      document.removeEventListener('load', apply, true);
+      document.removeEventListener('error', apply, true);
       removeEventListener('resize', apply);
       for (const event of ['wheel', 'touchstart', 'pointerdown', 'keydown'])
         removeEventListener(event, cancel);
@@ -88,18 +91,44 @@ export function useDirectoryHistory(ready: boolean) {
     };
     const apply = () => {
       if (restore.current !== target) return;
-      // 历史记录、README 等可能仍在加载，等页面足够高再恢复。
-      if (target.top > document.documentElement.scrollHeight - innerHeight + 1)
+      const maxTop = Math.max(
+        0,
+        document.documentElement.scrollHeight - innerHeight,
+      );
+      // 先等待异步正文；窗口变高或内容变短时，最终恢复到当前可达位置。
+      if (
+        target.top > maxTop + 1 &&
+        document.querySelector('[data-scroll-pending="true"]')
+      )
         return;
       window.scrollTo({
         left: target.left,
-        top: target.top,
+        top: Math.min(target.top, maxTop),
         behavior: 'instant',
       });
+      // 先滚到可达位置以触发懒加载，说明图片确定尺寸后再完成恢复。
+      if (
+        target.top > maxTop + 1 &&
+        [
+          ...document.querySelectorAll<HTMLImageElement>(
+            '#directory-readme img',
+          ),
+        ].some((image) => !image.complete)
+      )
+        return;
       cancel();
     };
     const observer = new ResizeObserver(apply);
+    const mutations = new MutationObserver(apply);
     observer.observe(document.body);
+    mutations.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-scroll-pending'],
+    });
+    document.addEventListener('load', apply, true);
+    document.addEventListener('error', apply, true);
     addEventListener('resize', apply);
     // 等待内容时一旦用户开始操作，便不再覆盖其滚动位置。
     for (const event of ['wheel', 'touchstart', 'pointerdown', 'keydown'])

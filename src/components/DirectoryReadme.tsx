@@ -98,6 +98,7 @@ export function DirectoryReadme({
       id="directory-readme"
       ref={article}
       className="directory-readme"
+      data-scroll-pending={!content && !error}
       aria-label={file.name}
     >
       <header className="readme-header">

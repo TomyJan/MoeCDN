@@ -39,7 +39,7 @@ export function HistoryPage({ t }: { t: Translate }) {
     return () => controller.abort();
   }, [attempt]);
   return (
-    <section className="history-page">
+    <section className="history-page" data-scroll-pending={!entries && !error}>
       <div className="heading">
         <div className="heading-main">
           <History aria-hidden="true" />
