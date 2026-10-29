@@ -12,6 +12,47 @@ function slug(text: string) {
   );
 }
 
+function headingIds(document: Document, prefix = '') {
+  const used = new Set(
+    [...document.querySelectorAll('[id]')].map((node) => node.id),
+  );
+  return [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')].map((heading) => {
+    const title = heading.textContent || '';
+    if (!heading.id) {
+      const base = prefix + slug(title);
+      let id = base;
+      for (let suffix = 1; used.has(id); suffix++) id = base + '-' + suffix;
+      used.add(id);
+      heading.id = id;
+    }
+    heading.setAttribute('tabindex', '-1');
+    return { id: heading.id, title, depth: Number(heading.tagName.slice(1)) };
+  });
+}
+
+export function preparePreviewDocument(
+  html: string,
+  base: string,
+  markdown = false,
+) {
+  const document = new DOMParser().parseFromString(html, 'text/html');
+  const baseElement = document.createElement('base');
+  baseElement.href = base;
+  document.head.prepend(baseElement);
+  if (markdown) headingIds(document);
+  for (const link of document.querySelectorAll('a[href]')) {
+    const href = link.getAttribute('href')!.trim();
+    if (!href.startsWith('#')) continue;
+    // 保留目录 base 给相对资源使用，片段链接显式指向当前 srcdoc。
+    link.setAttribute('href', 'about:srcdoc' + href);
+    link.setAttribute('target', '_self');
+  }
+  const doctype = document.doctype
+    ? new XMLSerializer().serializeToString(document.doctype)
+    : '';
+  return doctype + document.documentElement.outerHTML;
+}
+
 export function renderReadme(text: string, path: string) {
   const html = DOMPurify.sanitize(marked.parse(text, { async: false }), {
     USE_PROFILES: { html: true },
@@ -27,19 +68,7 @@ export function renderReadme(text: string, path: string) {
     FORBID_ATTR: ['style', 'id', 'name'],
   });
   const document = new DOMParser().parseFromString(html, 'text/html');
-  const used = new Set<string>();
-  const headings = [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')].map(
-    (heading) => {
-      const title = heading.textContent || '';
-      const base = 'readme-' + slug(title);
-      let id = base;
-      for (let suffix = 1; used.has(id); suffix++) id = base + '-' + suffix;
-      used.add(id);
-      heading.id = id;
-      heading.setAttribute('tabindex', '-1');
-      return { id, title, depth: Number(heading.tagName.slice(1)) };
-    },
-  );
+  const headings = headingIds(document, 'readme-');
   const base = new URL(resourceUrl(path), location.origin);
   for (const link of document.querySelectorAll<HTMLAnchorElement>('a[href]')) {
     const href = link.getAttribute('href')!;

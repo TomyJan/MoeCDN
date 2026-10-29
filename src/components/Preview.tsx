@@ -23,18 +23,13 @@ import type { Entry } from '../lib/types.ts';
 import type { Translate } from '../lib/i18n.ts';
 import { fileType, formatSize, resourceUrl } from '../lib/catalog.ts';
 import { sourceFormat } from '../lib/syntax.ts';
+import { preparePreviewDocument } from '../lib/markdown.ts';
 import { Button, CopyButton, FileIcon } from './ui.tsx';
 import { PreviewBoundary } from './PreviewBoundary.tsx';
 
 const PdfPreview = lazy(() => import('./PdfPreview.tsx'));
 const CodePreview = lazy(() => import('./CodePreview.tsx'));
 
-function escapeAttribute(text: string) {
-  return text
-    .replaceAll('&', '&amp;')
-    .replaceAll('"', '&quot;')
-    .replaceAll('<', '&lt;');
-}
 export function Preview({
   file,
   open,
@@ -127,7 +122,6 @@ export function Preview({
   const rendered = useMemo(() => {
     if (!document || text === null) return '';
     const base = new URL(url, location.origin).href.replace(/[^/]*$/, '');
-    const baseTag = `<base href="${escapeAttribute(base)}">`;
     if (format.document === 'markdown') {
       const content = DOMPurify.sanitize(marked.parse(text, { async: false }), {
         FORBID_TAGS: ['style', 'iframe', 'form'],
@@ -137,11 +131,13 @@ export function Preview({
         theme === 'dark' ||
         (theme === 'system' &&
           matchMedia('(prefers-color-scheme: dark)').matches);
-      return `<!doctype html><html><head><meta charset="utf-8">${baseTag}<link rel="stylesheet" href="${location.origin}/_moecdn/preview-fonts.css"><style>body{margin:0;padding:24px 28px;font:14px/1.8 'Source Code Pro',MiSans,system-ui,sans-serif;background:${dark ? '#181818' : '#fff'};color:${dark ? '#e7e7e7' : '#292929'};overflow-wrap:anywhere}img{max-width:100%}pre{overflow:auto;padding:15px;background:${dark ? '#252525' : '#f4f4f4'};border-radius:7px}a{color:${dark ? '#6bc8c8' : '#007c7c'}}table{border-collapse:collapse}td,th{border:1px solid #888;padding:8px}code{font-family:inherit}blockquote{padding-left:18px;border-left:3px solid #888}</style></head><body>${content}</body></html>`;
+      return preparePreviewDocument(
+        `<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="${location.origin}/_moecdn/preview-fonts.css"><style>body{margin:0;padding:24px 28px;font:14px/1.8 'Source Code Pro',MiSans,system-ui,sans-serif;background:${dark ? '#181818' : '#fff'};color:${dark ? '#e7e7e7' : '#292929'};overflow-wrap:anywhere}img{max-width:100%}pre{overflow:auto;padding:15px;background:${dark ? '#252525' : '#f4f4f4'};border-radius:7px}a{color:${dark ? '#6bc8c8' : '#007c7c'}}table{border-collapse:collapse}td,th{border:1px solid #888;padding:8px}code{font-family:inherit}blockquote{padding-left:18px;border-left:3px solid #888}</style></head><body>${content}</body></html>`,
+        base,
+        true,
+      );
     }
-    return /<head(?:\s[^>]*)?>/i.test(text)
-      ? text.replace(/<head(?:\s[^>]*)?>/i, (match) => match + baseTag)
-      : baseTag + text;
+    return preparePreviewDocument(text, base);
   }, [text, document, format.document, url, theme]);
   function duration(value: number) {
     if (!Number.isFinite(value) || value <= 0) return;
