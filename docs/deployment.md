@@ -49,7 +49,7 @@ README 文件名不区分大小写，同一目录优先使用 `README.md`；这�
 
 索引与应用入口设置为 `no-cache`；打包后带内容哈希的程序资产可以长缓存。EO 会在新部署后刷新边缘缓存，不为索引另设持久边缘缓存规则。
 
-MiSans 沿用确认设计中的字体分片，Source Code Pro 从依赖包发布到本站，无运行时第三方字体 CDN 依赖。字体与图标的第三方许可保留在设计说明及发布的 `/_moecdn/licenses/` 中；旧站资源遵循其各自原有许可。
+MiSans 和 Source Code Pro 通过 `<link>` 引用 `web-static/public/font/` 下的 CSS，字体文件分别由小米 CDN 和 npmmirror 提供。Source Code Pro 许可随字体 CSS 发布，其他第三方许可见设计说明及 `/_moecdn/licenses/`；旧站资源遵循其各自原有许可。
 
 文件图标使用 VS Code 的 Material Icon Theme（并非 VS Code 内置的默认文件主题）。构建时读取依赖包的完整文件名与扩展名关联，优先匹配专用文件名及复合扩展名，再匹配普通扩展名；只发布当前资源实际使用的图标，并随网站主题切换浅色变体。新增格式无需手写前端映射。
 

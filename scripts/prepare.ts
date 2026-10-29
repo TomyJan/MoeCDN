@@ -95,20 +95,6 @@ export async function prepare(): Promise<Catalog> {
     'design/licenses/material-icon-theme-LICENSE',
     'public/_moecdn/licenses/material-icon-theme-LICENSE',
   );
-  await cp(
-    'node_modules/@fontsource/source-code-pro/files/source-code-pro-latin-400-normal.woff2',
-    'public/_moecdn/source-code-pro.woff2',
-  );
-  await cp(
-    'node_modules/@fontsource/source-code-pro/LICENSE',
-    'public/_moecdn/licenses/source-code-pro-LICENSE',
-  );
-  const sans = await readFile('src/assets/misans.css', 'utf8');
-  await writeFile(
-    'public/_moecdn/preview-fonts.css',
-    sans +
-      '\n@font-face{font-family:"Source Code Pro";font-style:normal;font-weight:400;font-display:swap;src:url("/_moecdn/source-code-pro.woff2") format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}',
-  );
   console.log(
     `索引：${entries.filter((f) => !f.dir).length} 个文件，${entries.filter((f) => f.dir).length} 个目录`,
   );
