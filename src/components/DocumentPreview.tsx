@@ -10,15 +10,8 @@ export function DocumentPreview({
   const frame = useRef<HTMLIFrameElement>(null);
   useEffect(() => {
     const element = frame.current!;
-    let currentDocument: Document | null = null;
-    let unbind = () => {};
-    const bind = () => {
-      const document = element.contentDocument;
-      if (document === currentDocument) return;
-      unbind();
-      unbind = () => {};
-      currentDocument = document;
-      if (!document) return;
+    const bindings = new Map<Document, () => void>();
+    const bind = (document: Document, context: Window) => {
       const followLink: EventListener = (click) => {
         const event = click as MouseEvent;
         if (
@@ -108,7 +101,7 @@ export function DocumentPreview({
           } catch {
             /* 非 HTML/SVG 目标仍可滚动。 */
           }
-          if (top) window.scrollTo.call(element.contentWindow, 0, 0);
+          if (top) window.scrollTo.call(context, 0, 0);
           else Element.prototype.scrollIntoView.call(target);
         }
       };
@@ -140,7 +133,7 @@ export function DocumentPreview({
       ];
       for (const [type, listener] of listeners)
         EventTarget.prototype.addEventListener.call(document, type, listener);
-      unbind = () => {
+      return () => {
         for (const [type, listener] of listeners)
           EventTarget.prototype.removeEventListener.call(
             document,
@@ -149,18 +142,46 @@ export function DocumentPreview({
           );
       };
     };
-    // load 可能被慢图片拖延；每帧只比较 Document 身份，换文档时提前绑定。
+    const refresh = () => {
+      const active = new Set<Document>();
+      const visit = (context: Window | null) => {
+        if (!context) return;
+        try {
+          const document = context.document;
+          active.add(document);
+          if (!bindings.has(document))
+            bindings.set(document, bind(document, context));
+        } catch {
+          /* 跨域或不允许同源访问的沙箱文档不可接管。 */
+        }
+        try {
+          // Window 子上下文包含 iframe、object 和 embed，也覆盖多层嵌套。
+          for (let index = 0; index < context.length; index++)
+            visit(context[index]);
+        } catch {
+          /* 子上下文可能在遍历中被移除。 */
+        }
+      };
+      visit(element.contentWindow);
+      for (const [document, unbind] of bindings)
+        if (!active.has(document)) {
+          unbind();
+          bindings.delete(document);
+        }
+    };
+    // load 可能被慢图片拖延；每帧比较文档身份，及时绑定并清理已替换的文档。
     let animation = 0;
     const watch = () => {
-      bind();
+      refresh();
       animation = requestAnimationFrame(watch);
     };
-    element.addEventListener('load', bind);
+    element.addEventListener('load', refresh);
     watch();
     return () => {
       cancelAnimationFrame(animation);
-      element.removeEventListener('load', bind);
-      unbind();
+      element.removeEventListener('load', refresh);
+      for (const unbind of bindings.values()) unbind();
+      bindings.clear();
     };
   }, [html]);
   // 同源权限供父页面接管文内滚动；不授予脚本、弹窗或顶层导航权限。

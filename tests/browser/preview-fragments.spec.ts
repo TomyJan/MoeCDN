@@ -1,4 +1,151 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+
+async function embeddedPreview(page: Page, kind: string) {
+  const body =
+    '<button>Inside</button><a href="sample.json">Next</a><a href="#target">Jump</a><div style="height:1600px"></div><h2 id="target">Target</h2><a href="#">Top</a><script>top.__embeddedScriptRan=true</script>';
+  const embedded =
+    kind === 'srcdoc'
+      ? `<iframe srcdoc="${body.replaceAll('&', '&amp;').replaceAll('"', '&quot;')}"></iframe>`
+      : kind === 'object'
+        ? '<object type="text/html" data="review-child.html"></object>'
+        : `<${kind} src="review-child.html"></${kind}>`;
+  await page.route('**/test/sample.html', (route) =>
+    route.fulfill({ contentType: 'text/html', body: embedded }),
+  );
+  await page.route('**/test/review-child.html', (route) =>
+    route.fulfill({ contentType: 'text/html', body }),
+  );
+  await page.goto('/');
+  await page
+    .getByRole('button', { name: '打开文件夹 test', exact: true })
+    .click();
+  const length = await page.evaluate(() => history.length);
+  const trigger = page.getByRole('button', {
+    name: '预览文件 sample.html',
+    exact: true,
+  });
+  await trigger.click();
+  await expect
+    .poll(() =>
+      page
+        .frames()
+        .some(
+          (frame) => frame.parentFrame()?.parentFrame() === page.mainFrame(),
+        ),
+    )
+    .toBe(true);
+  const inner = page
+    .frames()
+    .find((frame) => frame.parentFrame()?.parentFrame() === page.mainFrame())!;
+  await expect(
+    inner.getByRole('button', { name: 'Inside', exact: true }),
+  ).toBeVisible();
+  return { inner, length, trigger };
+}
+
+test('多层嵌套网页在慢图片加载前即可接管，隔离文档不影响同源兄弟页面', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/test/slow-review.png', async (route) => {
+    await pending;
+    await route.abort();
+  });
+  await page.route('**/test/sample.html', (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: '<iframe sandbox srcdoc="Opaque"></iframe><iframe src="review-parent.html"></iframe>',
+    }),
+  );
+  await page.route('**/test/review-parent.html', (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: '<iframe src="review-child.html"></iframe>',
+    }),
+  );
+  await page.route('**/test/review-child.html', (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: '<a href="sample.json">Next</a><button>Inside</button><img src="slow-review.png">',
+    }),
+  );
+  try {
+    await page.goto('/test/');
+    await page
+      .getByRole('button', { name: '预览文件 sample.html', exact: true })
+      .click();
+    await expect
+      .poll(() =>
+        page
+          .frames()
+          .some((frame) => frame.url().endsWith('/test/review-child.html')),
+      )
+      .toBe(true);
+    const inner = page
+      .frames()
+      .find((frame) => frame.url().endsWith('/test/review-child.html'))!;
+    await expect(inner.getByRole('link', { name: 'Next' })).toBeVisible();
+    expect(
+      await inner
+        .locator('img')
+        .evaluate((image: HTMLImageElement) => image.complete),
+    ).toBe(false);
+    const length = await page.evaluate(() => history.length);
+    const popup = page.waitForEvent('popup', { timeout: 3000 });
+    await inner.getByRole('link', { name: 'Next' }).click();
+    const opened = await popup;
+    await expect(opened).toHaveURL('/test/sample.json');
+    await opened.close();
+    expect(await page.evaluate(() => history.length)).toBe(length);
+    await inner.getByRole('button', { name: 'Inside' }).click();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#preview-dialog')).toBeHidden();
+    expect(errors).toEqual([]);
+  } finally {
+    release();
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+  }
+});
+
+for (const kind of ['iframe', 'srcdoc', 'object', 'embed']) {
+  test(`${kind} 嵌套网页链接和锚点不改变目录历史`, async ({ page }) => {
+    const { inner, length } = await embeddedPreview(page, kind);
+    const popup = page.waitForEvent('popup', { timeout: 3000 });
+    await inner.getByRole('link', { name: 'Next', exact: true }).click();
+    const opened = await popup;
+    await expect(opened).toHaveURL('/test/sample.json');
+    expect(await opened.evaluate(() => window.opener)).toBeNull();
+    await opened.close();
+    await expect(inner.getByRole('button', { name: 'Inside' })).toBeVisible();
+    await inner.getByRole('link', { name: 'Jump', exact: true }).click();
+    await expect.poll(() => inner.evaluate(() => scrollY)).toBeGreaterThan(0);
+    await inner.getByRole('link', { name: 'Top', exact: true }).click();
+    await expect.poll(() => inner.evaluate(() => scrollY)).toBe(0);
+    expect(await page.evaluate(() => '__embeddedScriptRan' in window)).toBe(
+      false,
+    );
+    expect(await page.evaluate(() => history.length)).toBe(length);
+    await page.getByRole('button', { name: '关闭', exact: true }).click();
+    await expect(page.locator('#preview-dialog')).toBeHidden();
+    await page.goBack();
+    await expect(page).toHaveURL('/');
+    await page.goForward();
+    await expect(page).toHaveURL('/test/');
+  });
+
+  test(`${kind} 嵌套网页获得焦点后 Esc 关闭预览`, async ({ page }) => {
+    const { inner, trigger } = await embeddedPreview(page, kind);
+    await inner.getByRole('button', { name: 'Inside', exact: true }).click();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#preview-dialog')).toBeHidden();
+    await expect(trigger).toBeFocused();
+  });
+}
 
 for (const kind of ['area', 'xlink']) {
   test(`${kind} 链接保留预览与目录历史，锚点和协议检查仍生效`, async ({
