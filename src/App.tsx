@@ -94,6 +94,9 @@ export function App() {
   useEffect(() => {
     document.documentElement.style.colorScheme = scheme;
     document.documentElement.lang = lang;
+    document
+      .querySelector('meta[name="description"]')
+      ?.setAttribute('content', translator(lang)('siteDescription'));
     try {
       localStorage.setItem(
         'moecdn.preferences',

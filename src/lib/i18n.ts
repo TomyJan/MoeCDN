@@ -1,5 +1,7 @@
 import type { Language } from './types.ts';
 const zh = {
+  siteDescription:
+    'MoeCDN 提供公共库与静态资源的 CDN 加速，支持目录浏览、搜索、在线预览和资源直链。',
   allFiles: '所有文件',
   root: '根目录',
   directories: '资源目录',
@@ -79,6 +81,8 @@ const zh = {
   copyFailed: '复制失败，请手动复制文本框中的内容',
 };
 const en: Record<keyof typeof zh, string> = {
+  siteDescription:
+    'MoeCDN delivers public libraries and static assets through a CDN, with directory browsing, search, online previews and direct resource links.',
   allFiles: 'All files',
   root: 'Root',
   directories: 'Directories',
