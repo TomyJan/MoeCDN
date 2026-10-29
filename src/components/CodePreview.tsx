@@ -19,18 +19,23 @@ export default function CodePreview({
   onHighlightError: () => void;
   label: string;
 }) {
+  // 浏览器不将独立 CR 渲染为换行；显示时转为同长度 LF，复制时仍用原文。
+  const displayText = useMemo(() => text.replace(/\r(?!\n)/g, '\n'), [text]);
   const large = useMemo(() => {
-    if (text.length > 200_000) return true;
+    if (displayText.length > 200_000) return true;
     let lines = 1;
     for (
-      let index = text.indexOf('\n');
+      let index = displayText.indexOf('\n');
       index !== -1;
-      index = text.indexOf('\n', index + 1)
+      index = displayText.indexOf('\n', index + 1)
     )
       if (++lines > 5000) return true;
     return false;
-  }, [text]);
-  const plain = useMemo(() => (large ? [] : text.split('\n')), [text, large]);
+  }, [displayText]);
+  const plain = useMemo(
+    () => (large ? [] : displayText.split('\n')),
+    [displayText, large],
+  );
   const [highlighted, setHighlighted] = useState<{
     text: string;
     language: string;
@@ -68,7 +73,7 @@ export default function CodePreview({
         failed();
       };
       worker.onmessageerror = failed;
-      worker.postMessage({ text, language });
+      worker.postMessage({ text: displayText, language });
     } catch {
       failed();
     }
@@ -77,7 +82,15 @@ export default function CodePreview({
       clearTimeout(timeout);
       worker?.terminate();
     };
-  }, [text, language, highlight, highlighted, onHighlightError, large]);
+  }, [
+    text,
+    displayText,
+    language,
+    highlight,
+    highlighted,
+    onHighlightError,
+    large,
+  ]);
   if (large)
     return (
       <Suspense fallback={<pre className="code-preview">{text}</pre>}>
@@ -101,6 +114,37 @@ export default function CodePreview({
       className="code-preview"
       data-wrap={wrap}
       aria-busy={highlight && Boolean(language) && !colored}
+      onCopy={(event) => {
+        if (displayText === text) return;
+        const selection = window.getSelection();
+        if (!selection?.rangeCount || selection.isCollapsed) return;
+        const range = selection.getRangeAt(0);
+        const element = event.currentTarget;
+        if (
+          !element.contains(range.startContainer) ||
+          !element.contains(range.endContainer)
+        )
+          return;
+        const offset = (node: Node, position: number) => {
+          const prefix = document.createRange();
+          prefix.selectNodeContents(element);
+          prefix.setEnd(node, position);
+          return [
+            ...prefix.cloneContents().querySelectorAll('.line-content'),
+          ].reduce(
+            (length, line) => length + (line.textContent?.length || 0),
+            0,
+          );
+        };
+        event.clipboardData.setData(
+          'text/plain',
+          text.slice(
+            offset(range.startContainer, range.startOffset),
+            offset(range.endContainer, range.endOffset),
+          ),
+        );
+        event.preventDefault();
+      }}
     >
       <code>
         {plain.map((line, index) => (

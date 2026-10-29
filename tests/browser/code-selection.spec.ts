@@ -1,5 +1,74 @@
 import { test, expect } from '@playwright/test';
 
+for (const source of [
+  'const a=1;\rconst b=2;\rconst c=3;\r',
+  'const a=1;\r\nconst b=2;\rconst c=3;\n',
+]) {
+  test(`CR 换行按逻辑行显示，复制保留原始换行 ${JSON.stringify(source)}`, async ({
+    page,
+  }) => {
+    await page.route('**/test/sample.js', (route) =>
+      route.fulfill({ contentType: 'text/javascript', body: source }),
+    );
+    await page.goto('/test/');
+    await page
+      .getByRole('button', { name: '预览文件 sample.js', exact: true })
+      .click();
+    const code = page.locator('.code-preview');
+    await expect(code).toHaveAttribute('aria-busy', 'false');
+    for (let index = 0; index < 2; index++) {
+      await expect(page.locator('.line-number')).toHaveText([
+        '1',
+        '2',
+        '3',
+        '4',
+      ]);
+      await expect(page.locator('.line-content').nth(1)).toContainText(
+        'const b=2;',
+      );
+      const copied = await code.evaluate((element) => {
+        const selection = getSelection()!;
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        const data = new DataTransfer();
+        element.dispatchEvent(
+          new ClipboardEvent('copy', {
+            bubbles: true,
+            cancelable: true,
+            clipboardData: data,
+          }),
+        );
+        return data.getData('text/plain');
+      });
+      expect(copied).toBe(source);
+      const partial = await code.evaluate((element) => {
+        const lines = element.querySelectorAll('.line-content');
+        const range = document.createRange();
+        range.setStartBefore(lines[1]);
+        range.setEndAfter(lines[2]);
+        getSelection()!.removeAllRanges();
+        getSelection()!.addRange(range);
+        const data = new DataTransfer();
+        element.dispatchEvent(
+          new ClipboardEvent('copy', {
+            bubbles: true,
+            cancelable: true,
+            clipboardData: data,
+          }),
+        );
+        return data.getData('text/plain');
+      });
+      expect(partial).toBe(source.slice(source.indexOf('const b')));
+      if (!index)
+        await page
+          .getByRole('button', { name: '语法高亮: 开', exact: true })
+          .click();
+    }
+  });
+}
+
 test('CRLF 多行 token 高亮不增加空行，切换高亮后文本和选区保持一致', async ({
   page,
 }) => {
