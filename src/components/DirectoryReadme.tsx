@@ -146,20 +146,28 @@ export function DirectoryReadme({
           </DropdownMenu.Root>
         )}
       </header>
-      {content ? (
+      {content && !content.failed ? (
         <div
           className="readme-body"
           onClick={followLink}
           dangerouslySetInnerHTML={{ __html: content.html }}
         />
       ) : (
-        <div className="readme-status" role="status">
-          {error ? t('loadFailed') : t('loading')}
-          {error && (
+        <div
+          className="readme-status"
+          role={content?.failed ? 'alert' : 'status'}
+        >
+          {content?.failed
+            ? t('markdownFailed')
+            : error
+              ? t('loadFailed')
+              : t('loading')}
+          {(error || content?.failed) && (
             <Button
               variant="secondary"
               onClick={() => {
                 setError(false);
+                setText(null);
                 setAttempt((value) => value + 1);
               }}
             >

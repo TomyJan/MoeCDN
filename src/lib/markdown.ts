@@ -2,6 +2,14 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { resourceUrl } from './catalog.ts';
 
+export function parseMarkdown(text: string) {
+  try {
+    return { html: marked.parse(text, { async: false }), failed: false };
+  } catch {
+    return { html: '', failed: true };
+  }
+}
+
 function slug(text: string) {
   return (
     text
@@ -54,7 +62,9 @@ export function preparePreviewDocument(
 }
 
 export function renderReadme(text: string, path: string) {
-  const html = DOMPurify.sanitize(marked.parse(text, { async: false }), {
+  const parsed = parseMarkdown(text);
+  if (parsed.failed) return { html: '', headings: [], failed: true };
+  const html = DOMPurify.sanitize(parsed.html, {
     USE_PROFILES: { html: true },
     FORBID_TAGS: [
       'style',
@@ -121,5 +131,5 @@ export function renderReadme(text: string, path: string) {
     image.loading = 'lazy';
     image.decoding = 'async';
   }
-  return { html: document.body.innerHTML, headings };
+  return { html: document.body.innerHTML, headings, failed: false };
 }

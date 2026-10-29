@@ -112,16 +112,21 @@ export function SearchDialog({
           onCloseAutoFocus={(event) => {
             event.preventDefault();
             if (!navigating.current) {
-              const target = trigger.current?.isConnected
-                ? trigger.current
-                : previousFocus.current?.isConnected &&
-                    previousFocus.current !== document.body &&
-                    !previousFocus.current.closest(
-                      '[role="dialog"][data-state="closed"]',
-                    )
-                  ? previousFocus.current
-                  : fallbackTrigger.current;
-              if (target?.isConnected) target.focus({ preventScroll: true });
+              const target = [
+                previousFocus.current,
+                trigger.current,
+                fallbackTrigger.current,
+              ].find(
+                (element) =>
+                  element?.isConnected &&
+                  element !== document.body &&
+                  !element.matches(':disabled') &&
+                  !element.closest(
+                    '[role="dialog"][data-state="closed"], [hidden], [inert]',
+                  ) &&
+                  element.getClientRects().length > 0,
+              );
+              target?.focus({ preventScroll: true });
             }
           }}
         >

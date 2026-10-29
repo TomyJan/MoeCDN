@@ -3,7 +3,7 @@ import {
   type IncomingMessage,
   type ServerResponse,
 } from 'node:http';
-import { readFile, stat } from 'node:fs/promises';
+import { lstat, readFile, realpath, stat } from 'node:fs/promises';
 import { resolve, relative, extname, isAbsolute, sep } from 'node:path';
 import { readDirectoryPath, resourceUrl } from '../src/lib/catalog.ts';
 const mime: Record<string, string> = {
@@ -78,6 +78,31 @@ export function resourceMiddleware(root: string) {
         rel = relative(absolute, file);
       if (isAbsolute(rel) || rel === '..' || rel.startsWith('..' + sep))
         return next();
+      // 与索引器一致：任何路径段都不能经过符号链接（包括 junction）。
+      // 拒绝后直接结束响应，避免 Vite 的后续静态中间件再次提供该路径。
+      const deny = () => {
+        res.statusCode = 404;
+        res.end('Not found');
+      };
+      let current = absolute;
+      for (const segment of rel.split(sep).filter(Boolean)) {
+        current = resolve(current, segment);
+        const info = await lstat(current).catch(() => null);
+        if (info?.isSymbolicLink()) return deny();
+        if (!info) break;
+      }
+      const actualFile = await realpath(file).catch(() => null);
+      if (actualFile) {
+        const actualRoot = await realpath(absolute);
+        const actualRelative = relative(actualRoot, actualFile);
+        if (
+          isAbsolute(actualRelative) ||
+          actualRelative === '..' ||
+          actualRelative.startsWith('..' + sep) ||
+          actualRelative.split(sep).some((segment) => segment.startsWith('.'))
+        )
+          return deny();
+      }
       const info = await stat(file).catch(() => null);
       if (info?.isFile()) return send(file, req, res);
       if (root === 'dist') {

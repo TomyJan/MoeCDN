@@ -27,13 +27,8 @@ function PdfPage({
   useEffect(() => {
     const element = container.current!;
     const intersection = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          intersection.disconnect();
-        }
-      },
-      { rootMargin: '300px' },
+      ([entry]) => setVisible(entry.isIntersecting),
+      { root: element.closest('.pdf-document'), rootMargin: '300px' },
     );
     intersection.observe(element);
     const resize = new ResizeObserver(([entry]) =>
@@ -50,6 +45,7 @@ function PdfPage({
     let cancelled = false;
     let task: RenderTask | undefined;
     const element = canvas.current!;
+    setError(false);
     delete element.dataset.rendered;
     void document
       .getPage(number)
@@ -72,15 +68,27 @@ function PdfPage({
     return () => {
       cancelled = true;
       task?.cancel();
+      const release = () => {
+        element.width = 0;
+        element.height = 0;
+        delete element.dataset.rendered;
+      };
+      // 等旧绘制结束再释放它自己的画布；新一轮渲染使用不同节点。
+      if (task) void task.promise.then(release, release);
+      else release();
     };
   }, [document, number, visible, width]);
   return (
     <div className="pdf-page" ref={container} style={{ aspectRatio: ratio }}>
-      {error ? (
-        <p role="alert">{failed}</p>
-      ) : (
-        <canvas ref={canvas} aria-label={`PDF · ${number}`} />
-      )}
+      {error && <p role="alert">{failed}</p>}
+      <canvas
+        key={`${visible}-${width}`}
+        ref={canvas}
+        width={0}
+        height={0}
+        hidden={error}
+        aria-label={`PDF · ${number}`}
+      />
     </div>
   );
 }

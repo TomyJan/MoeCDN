@@ -1,6 +1,8 @@
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { spawn, type ChildProcess } from 'node:child_process';
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, rm, symlink, writeFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
+import { resourceMiddleware } from '../scripts/server.ts';
 import { tmpdir } from 'node:os';
 import { join, parse, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -53,6 +55,52 @@ it('本地服务仍可按原内容读取公开资源', async () => {
   const response = await fetch(origin + '/asset.txt');
   expect(response.status).toBe(200);
   expect(await response.text()).toBe('PUBLIC ASSET');
+});
+
+it('目录链接不能公开根目录外或隐藏文件，也不能交给后续静态中间件', async () => {
+  await mkdir(join(root, 'outside'));
+  await mkdir(join(root, 'dist/.hidden'));
+  await writeFile(join(root, 'outside/secret.txt'), 'OUTSIDE SECRET');
+  await writeFile(join(root, 'dist/.hidden/secret.txt'), 'HIDDEN SECRET');
+  await writeFile(join(root, 'dist/中文/secret.txt'), 'ORDINARY TARGET');
+  for (const [name, target] of [
+    ['external-link', join(root, 'outside')],
+    ['hidden-link', join(root, 'dist/.hidden')],
+    ['internal-link', join(root, 'dist/中文')],
+  ]) {
+    await symlink(
+      target,
+      join(root, 'dist', name),
+      process.platform === 'win32' ? 'junction' : 'dir',
+    );
+  }
+  const middleware = resourceMiddleware(join(root, 'dist'));
+  const server = createServer((req, res) =>
+    middleware(req, res, () => res.end('VITE FALLTHROUGH')),
+  );
+  await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
+  const address = server.address() as { port: number };
+  try {
+    for (const path of [
+      '/external-link/secret.txt',
+      '/hidden-link/secret.txt',
+      '/internal-link/secret.txt',
+      '/external-link/',
+    ]) {
+      const response = await fetch(`http://127.0.0.1:${address.port}${path}`);
+      expect(response.status).toBe(404);
+      expect(await response.text()).toBe('Not found');
+    }
+    const response = await fetch(`http://127.0.0.1:${address.port}/asset.txt`, {
+      headers: { Range: 'bytes=0-5' },
+    });
+    expect(response.status).toBe(206);
+    expect(await response.text()).toBe('PUBLIC');
+  } finally {
+    await new Promise<void>((done, reject) =>
+      server.close((error) => (error ? reject(error) : done())),
+    );
+  }
 });
 
 it.skipIf(
