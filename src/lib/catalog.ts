@@ -4,7 +4,7 @@ export function resourceUrl(path: string) {
 }
 export function readDirectoryPath(path: string): string | null {
   try {
-    if (/%2f|%5c/i.test(path)) return null;
+    if (path.startsWith('//') || /%2f|%5c/i.test(path)) return null;
     const value = decodeURIComponent(path).replace(/^\//, '');
     if (
       value.split('/').some((p) => p === '..' || p === '.' || p.includes('\\'))

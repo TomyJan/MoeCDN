@@ -113,4 +113,5 @@ it('原始路径只编码一次，编码分隔符与畸形转义不被解释成�
   expect(readDirectoryPath('/%E4%B8%AD%20%E6%96%87/')).toBe('中 文/');
   expect(readDirectoryPath('/bad%zz/')).toBe(null);
   expect(readDirectoryPath('/a%2Fb/')).toBe(null);
+  expect(readDirectoryPath('//example.com/')).toBe(null);
 });

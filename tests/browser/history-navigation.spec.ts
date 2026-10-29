@@ -1,5 +1,21 @@
 import { test, expect, type Page } from '@playwright/test';
 
+test('旧 hash 路由安全迁移，畸形路径显示不存在而不白屏', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('/#//example.com/');
+  await expect(page.getByRole('heading', { name: '目录不存在' })).toBeVisible();
+  await page.getByRole('button', { name: '返回根目录' }).click();
+  await expect(page).toHaveURL('/');
+  await page.goto('/#/lib/jquery/');
+  await expect(page).toHaveURL('/lib/jquery/');
+  await expect(page.locator('#title')).toHaveText('jquery');
+  await page.goto('/#/missing?query#fragment/');
+  await expect(page).toHaveURL('/missing%3Fquery%23fragment/');
+  await expect(page.getByRole('heading', { name: '目录不存在' })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 async function searchFolder(page: Page, query: string, name: string) {
   await page.keyboard.press('/');
   await page.locator('#query').fill(query);

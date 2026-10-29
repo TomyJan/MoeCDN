@@ -15,8 +15,10 @@ interface Snapshot extends DirectoryView {
 function currentPath() {
   if (location.hash.startsWith('#/')) {
     const target = location.hash.slice(1);
-    if (readDirectoryPath(target) !== null)
-      history.replaceState(history.state, '', target);
+    const path = readDirectoryPath(target);
+    if (path === null) return null;
+    history.replaceState(history.state, '', resourceUrl(path));
+    return path;
   }
   return readDirectoryPath(location.pathname);
 }
