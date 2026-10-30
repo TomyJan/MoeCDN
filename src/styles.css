@@ -14,6 +14,17 @@
   --accent: light-dark(#007c7c, #00dddd);
   --brand: #00dddd;
   --shadow: light-dark(#00000022, #00000066);
+  --shadow-sm:
+    0 0 10px light-dark(#0000000d, #0000004d),
+    0 3px 10px light-dark(#0000001a, #00000066);
+  --shadow-popover:
+    0 0 20px light-dark(#00000014, #00000066),
+    0 8px 28px light-dark(#0000001f, #00000080),
+    0 2px 6px light-dark(#0000000d, #0000004d);
+  --shadow-dialog:
+    0 0 32px light-dark(#0000001a, #00000080),
+    0 20px 64px light-dark(#00000029, #00000099),
+    0 4px 12px light-dark(#0000000d, #00000066);
   --on-primary: light-dark(#fff, #202020);
   --primary: light-dark(#292929, #e2e2e2);
   font-family: MiSans, system-ui, sans-serif;
@@ -440,7 +451,7 @@ main {
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--panel);
-  box-shadow: 0 8px 30px var(--shadow);
+  box-shadow: var(--shadow-popover);
   z-index: 40;
   transform-origin: top right;
   animation: menu-in 0.16s ease-out;
@@ -644,7 +655,7 @@ dialog {
   padding: 0;
   border: 1px solid var(--border);
   border-radius: 13px;
-  box-shadow: 0 25px 100px var(--shadow);
+  box-shadow: var(--shadow-dialog);
   max-width: calc(100% - 32px);
   max-height: calc(100dvh - 48px);
   animation: dialog-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -1044,7 +1055,7 @@ dialog.is-closing::backdrop {
   color: var(--on-primary);
   border: 1px solid var(--strong-border);
   border-radius: 10px;
-  box-shadow: 0 6px 25px var(--shadow);
+  box-shadow: var(--shadow-popover);
   padding: 11px 17px;
   display: flex;
   align-items: center;
@@ -1066,7 +1077,7 @@ dialog.is-closing::backdrop {
   border-radius: 5px;
   pointer-events: none;
   max-width: 250px;
-  box-shadow: 0 2px 10px var(--shadow);
+  box-shadow: var(--shadow-sm);
   animation: menu-in 0.12s;
 }
 @keyframes menu-in {
@@ -1525,7 +1536,7 @@ dialog.is-closing::backdrop {
   color: var(--ink);
   border: 1px solid var(--border);
   border-radius: 11px;
-  box-shadow: 0 12px 45px var(--shadow);
+  box-shadow: var(--shadow-popover);
   opacity: 0;
   transform: translateY(-5px) scale(0.97);
   transform-origin: top right;
@@ -1737,7 +1748,7 @@ main {
   transform: translateY(-101%);
 }
 .topbar.is-floating {
-  box-shadow: 0 3px 20px color-mix(in srgb, var(--shadow) 30%, transparent);
+  box-shadow: var(--shadow-sm);
 }
 .nav-link {
   display: inline-flex;
@@ -1788,7 +1799,7 @@ main {
   color: var(--ink);
   display: grid;
   place-items: center;
-  box-shadow: 0 4px 18px var(--shadow);
+  box-shadow: var(--shadow-sm);
   z-index: 20;
   opacity: 0;
   transform: translateY(12px) scale(0.85);

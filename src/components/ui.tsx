@@ -11,7 +11,7 @@ import {
 import { cva } from 'class-variance-authority';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { DropdownMenu } from 'radix-ui';
+import { DropdownMenu, Tooltip } from 'radix-ui';
 import { Check, Copy } from 'lucide-react';
 import type { Translate } from '../lib/i18n.ts';
 import type { Entry } from '../lib/types.ts';
@@ -79,6 +79,7 @@ export function CopyButton({
   const { accepted } = useConsent();
   const [copied, setCopied] = useState(false),
     [failed, setFailed] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
     () => () => {
@@ -87,43 +88,66 @@ export function CopyButton({
     [],
   );
   return (
-    <Button
-      id={id}
-      disabled={!accepted}
-      className={clsx(className, copied && 'copy-success')}
-      aria-label={copied ? t('copied') : label || t('copyLink')}
-      title={
-        !accepted
-          ? t('acceptRequired')
-          : failed
-            ? t('copyFailed')
-            : label || t('copyLink')
-      }
-      data-copied={copied}
-      onClick={async () => {
-        if (!accepted) return;
-        try {
-          await navigator.clipboard.writeText(value);
-          setCopied(true);
-          setFailed(false);
-          if (timeout.current) clearTimeout(timeout.current);
-          timeout.current = setTimeout(() => setCopied(false), 1000);
-        } catch {
-          setFailed(true);
-          const area =
-            document.querySelector<HTMLTextAreaElement>('#copy-output');
-          area?.focus();
-          area?.select();
-        }
-      }}
-    >
-      {copied ? <Check key="success" /> : <Copy key="copy" />}
+    <Tooltip.Root open={failed}>
+      <Tooltip.Trigger asChild>
+        <Button
+          ref={trigger}
+          id={id}
+          disabled={!accepted}
+          className={clsx(className, copied && 'copy-success')}
+          aria-label={copied ? t('copied') : label || t('copyLink')}
+          title={
+            !accepted
+              ? t('acceptRequired')
+              : failed
+                ? t('copyFailed')
+                : label || t('copyLink')
+          }
+          data-copied={copied}
+          onClick={async () => {
+            if (!accepted) return;
+            try {
+              await navigator.clipboard.writeText(value);
+              setCopied(true);
+              setFailed(false);
+              if (timeout.current) clearTimeout(timeout.current);
+              timeout.current = setTimeout(() => setCopied(false), 1000);
+            } catch {
+              setFailed(true);
+              const area =
+                document.querySelector<HTMLTextAreaElement>('#copy-output');
+              area?.focus();
+              area?.select();
+            }
+          }}
+        >
+          {copied ? <Check key="success" /> : <Copy key="copy" />}
+        </Button>
+      </Tooltip.Trigger>
       {failed && (
-        <span className="copy-error" role="status">
-          {t('copyFailed')}
-        </span>
+        <Tooltip.Portal
+          container={
+            trigger.current?.closest<HTMLElement>(
+              '#preview-dialog, #search-dialog',
+            ) || document.body
+          }
+        >
+          <Tooltip.Content
+            className="copy-error"
+            role="status"
+            side="top"
+            align="end"
+            sideOffset={8}
+            collisionPadding={12}
+            hideWhenDetached
+            onEscapeKeyDown={() => setFailed(false)}
+            onPointerDownOutside={() => setFailed(false)}
+          >
+            {t('copyFailed')}
+          </Tooltip.Content>
+        </Tooltip.Portal>
       )}
-    </Button>
+    </Tooltip.Root>
   );
 }
 export function Menu({

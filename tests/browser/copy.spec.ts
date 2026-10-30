@@ -1,5 +1,33 @@
 import { test, expect } from '@playwright/test';
 
+test('剪贴板权限被拒绝时，嵌套高级复制的失败提示完整显示', async ({ page }) => {
+  await page.addInitScript(() => {
+    navigator.clipboard.writeText = async () => {
+      throw new DOMException('Clipboard permission denied', 'NotAllowedError');
+    };
+  });
+  await page.goto('/test/');
+  await page.locator('[data-file="test/sample.js"]').click();
+  await page.locator('#preview-advanced').click();
+  await page.locator('#copy-confirm').click();
+  const hint = page.locator('.copy-error');
+  await expect(hint).toBeVisible();
+  await expect(hint).toContainText('复制失败');
+  await expect
+    .poll(() =>
+      hint.evaluate((element) => {
+        const bounds = element.getBoundingClientRect();
+        return element.contains(
+          document.elementFromPoint(
+            bounds.left + bounds.width / 2,
+            bounds.bottom - 4,
+          ),
+        );
+      }),
+    )
+    .toBe(true);
+});
+
 test('高级复制支持键盘进入、切换格式和退出恢复焦点', async ({ page }) => {
   await page.goto('/test/');
   const trigger = page.locator('[data-advanced="test/sample.js"]');
