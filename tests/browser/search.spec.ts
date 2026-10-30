@@ -33,6 +33,39 @@ for (const path of ['/history/', '/missing-directory/']) {
   });
 }
 
+test('从移动目录打开搜索后立即按 Esc，也能关闭并恢复焦点', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.goto('/missing-directory/');
+  const trigger = page.locator('#nav-toggle');
+  await trigger.click();
+  await expect(
+    page.getByRole('dialog', { name: '目录导航', exact: true }),
+  ).toBeVisible();
+  await page.evaluate(() => {
+    const escapeOnFocus = (event: FocusEvent) => {
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement) || input.id !== 'query') return;
+      document.removeEventListener('focusin', escapeOnFocus, true);
+      document.documentElement.dataset.searchEscapeDispatched = 'true';
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    };
+    document.addEventListener('focusin', escapeOnFocus, true);
+  });
+  await page.keyboard.press('/');
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-search-escape-dispatched',
+    'true',
+  );
+  await expect(page.locator('#search-dialog')).toBeHidden();
+  await expect(trigger).toBeFocused();
+});
+
 test('关闭进行中的搜索续载后重开，不残留加载提示且仍可续载', async ({
   page,
 }) => {

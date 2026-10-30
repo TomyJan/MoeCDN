@@ -143,6 +143,12 @@ export function SearchDialog({
               autoComplete="off"
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={(event) => {
+                // 自动聚焦可能早于弹层的全局监听，输入框应立即响应退出。
+                if (event.key === 'Escape' && !event.nativeEvent.isComposing) {
+                  event.preventDefault();
+                  onOpenChange(false);
+                  return;
+                }
                 if (event.key === 'ArrowDown') {
                   const first = results?.querySelector<HTMLButtonElement>(
                     '.search-result-name',
