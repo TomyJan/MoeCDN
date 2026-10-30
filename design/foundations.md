@@ -1,6 +1,6 @@
 # 组件基础样式
 
-> 本文归档 2026-10-28 的原型样式与交互约定；搜索和字体来源等后续已有调整。当前说明见[部署与资源维护](../docs/deployment.md)，演变过程见[实施记录](../docs/implementation.md)。
+> 本文保留归档原型的样式基线，用于设计对照。当前样式以 src/styles.css 和 src/components.css 为准，字体与发布方式见[部署与资源维护](../docs/deployment.md)。
 
 ## 色彩
 
@@ -21,7 +21,7 @@
 
 ## 字体与图标
 
-主字体 MiSans，界面、列表、数字、预览元数据及网页页脚统一使用。预览正文西文使用 Source Code Pro，中文回退 MiSans。Source Code Pro 暂从 BootCDN 引用，正式版迁移为本站托管。
+主字体 MiSans，界面、列表、数字、预览元数据及网页页脚统一使用。预览正文西文使用 Source Code Pro，中文回退 MiSans。归档原型的 Source Code Pro 通过 BootCDN 引用；当前网站的字体 CSS 由本站提供。
 
 文件图标使用 VS Code Material Icon Theme 的真实 SVG，操作图标使用 Lucide。保留各自许可。不要用 emoji 替代文件类型图标。
 

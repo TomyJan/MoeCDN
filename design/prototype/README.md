@@ -32,4 +32,4 @@ python design/serve.py --resources /path/to/legacy-checkout
 
 浏览器使用现代 CSS、Web Animations、dialog 和 Popover API，请用近期版本浏览器查看。真实路径支持直接访问、刷新和前进后退，显式 `index.html` 返回原 HTML。
 
-原型尚未接入生产自动构建和部署。页脚提交号及索引时间是快照值；字体预览等内容也只是交互设计演示。后续改动原型后应同步更新 `snapshot.json` 的校验值与设计文档。
+原型是独立归档，不参与当前网站的构建与部署。页脚提交号、索引时间及部分预览为快照或演示值；八个原型源文件保留原字节，使用 snapshot.json 核对。
