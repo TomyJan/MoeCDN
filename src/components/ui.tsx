@@ -88,7 +88,12 @@ export function CopyButton({
     [],
   );
   return (
-    <Tooltip.Root open={failed}>
+    <Tooltip.Root
+      open={failed}
+      onOpenChange={(open) => {
+        if (!open) setFailed(false);
+      }}
+    >
       <Tooltip.Trigger asChild>
         <Button
           ref={trigger}

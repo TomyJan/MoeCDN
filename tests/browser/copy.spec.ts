@@ -13,6 +13,14 @@ test('剪贴板权限被拒绝时，嵌套高级复制的失败提示完整显�
   const hint = page.locator('.copy-error');
   await expect(hint).toBeVisible();
   await expect(hint).toContainText('复制失败');
+  await expect(page.locator('#copy-output')).toBeFocused();
+  expect(
+    await page
+      .locator('#copy-output')
+      .evaluate((area: HTMLTextAreaElement) =>
+        area.value.slice(area.selectionStart, area.selectionEnd),
+      ),
+  ).toMatch(/sample\.js/);
   await expect
     .poll(() =>
       hint.evaluate((element) => {
@@ -26,6 +34,40 @@ test('剪贴板权限被拒绝时，嵌套高级复制的失败提示完整显�
       }),
     )
     .toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(hint).toHaveCount(0);
+  await expect(page.locator('#copy-dialog')).toBeVisible();
+});
+
+test('搜索复制失败提示随滚动关闭，Escape 一次关闭搜索', async ({ page }) => {
+  await page.addInitScript(() => {
+    navigator.clipboard.writeText = async () => {
+      throw new DOMException('Clipboard permission denied', 'NotAllowedError');
+    };
+  });
+  await page.goto('/test/');
+  await page.locator('#open-search').click();
+  await page.locator('#query').fill('sample');
+  const results = page.locator('.search-results');
+  await expect(results).toBeVisible();
+  await results.evaluate((element) =>
+    Promise.all(element.getAnimations().map((animation) => animation.finished)),
+  );
+  const copy = results
+    .getByRole('button', { name: '复制链接', exact: true })
+    .first();
+  const hint = page.locator('.copy-error');
+  await copy.focus();
+  await expect(hint).toHaveCount(0);
+  await copy.click();
+  await expect(hint).toBeVisible();
+  await results.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await expect(hint).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#search-dialog')).toBeHidden();
+  await expect(page.locator('#open-search')).toBeFocused();
 });
 
 test('高级复制支持键盘进入、切换格式和退出恢复焦点', async ({ page }) => {
