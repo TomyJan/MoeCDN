@@ -12,7 +12,12 @@ import {
   Sun,
 } from 'lucide-react';
 import type { Catalog, Entry, Language, Theme } from './lib/types.ts';
-import { formatSize, resourceUrl, selectEntries } from './lib/catalog.ts';
+import {
+  formatSize,
+  readDirectoryPath,
+  resourceUrl,
+  selectEntries,
+} from './lib/catalog.ts';
 import { translator } from './lib/i18n.ts';
 import {
   Button,
@@ -31,15 +36,26 @@ import { SearchDialog } from './components/SearchDialog.tsx';
 import { DirectoryReadme } from './components/DirectoryReadme.tsx';
 import { useCompactNavigation } from './lib/useCompactNavigation.ts';
 import { useDirectoryHistory } from './lib/useDirectoryHistory.ts';
+import { legalPageKind } from './lib/legal.ts';
+import { useConsent } from './lib/consent.tsx';
+import { LegalPage } from './components/LegalPage.tsx';
+import { ConsentNotice } from './components/ConsentNotice.tsx';
+import { PageFooter } from './components/PageFooter.tsx';
 
 function preferences(): { lang?: Language; theme?: Theme } {
   try {
-    return JSON.parse(localStorage.getItem('moecdn.preferences') || '{}');
+    const saved: unknown = JSON.parse(
+      localStorage.getItem('moecdn.preferences') || '{}',
+    );
+    return saved && typeof saved === 'object' && !Array.isArray(saved)
+      ? (saved as { lang?: Language; theme?: Theme })
+      : {};
   } catch {
     return {};
   }
 }
 export function App() {
+  const { accepted } = useConsent();
   const header = useRef<HTMLElement>(null);
   const compactLinks = useCompactNavigation(header);
   const [catalog, setCatalog] = useState<Catalog | null>(null),
@@ -63,7 +79,10 @@ export function App() {
     limit,
     setLimit,
     navigate: navigateHistory,
-  } = useDirectoryHistory(Boolean(catalog));
+  } = useDirectoryHistory(
+    Boolean(catalog) ||
+      legalPageKind(readDirectoryPath(location.pathname)) !== null,
+  );
   const [expandedDirectories, setExpandedDirectories] = useState(
     new Set<string>(),
   );
@@ -83,6 +102,13 @@ export function App() {
     direction = useRef(1);
   const t = translator(lang),
     entries = catalog?.entries;
+  useEffect(() => {
+    if (!accepted) {
+      setPreview(null);
+      setPreviewOpen(false);
+      setCopy(null);
+    }
+  }, [accepted]);
   const scheme = theme === 'system' ? (systemDark ? 'dark' : 'light') : theme;
   useEffect(() => {
     const media = matchMedia('(prefers-color-scheme: dark)');
@@ -220,11 +246,13 @@ export function App() {
     });
   }, [normalized]);
   const isHistory = normalized === 'history/';
+  const legalKind = legalPageKind(normalized);
   const readme = catalog?.readmes?.[normalized || '']?.[0];
   const exists =
     normalized !== null &&
     (normalized === '' ||
       isHistory ||
+      legalKind !== null ||
       entries?.some((f) => f.dir && f.path === normalized));
   useEffect(() => {
     if (exists && path !== normalized && normalized !== null) {
@@ -283,6 +311,7 @@ export function App() {
     setMobileNav(false);
   }
   function advanced(file: Entry, event: MouseEvent<HTMLButtonElement>) {
+    if (!accepted) return;
     const anchor = event.currentTarget;
     setCopy((previous) =>
       previous?.file.path === file.path && !previous.closing
@@ -300,16 +329,17 @@ export function App() {
     .filter(Boolean)
     .join(' · ');
   const segments = (normalized || '').split('/').filter(Boolean);
-  const popup = copy ? (
-    <AdvancedCopy
-      key={copy.serial}
-      target={copy}
-      close={() =>
-        setCopy((value) => (value ? { ...value, closing: true } : null))
-      }
-      t={t}
-    />
-  ) : null;
+  const popup =
+    accepted && copy ? (
+      <AdvancedCopy
+        key={copy.serial}
+        target={copy}
+        close={() =>
+          setCopy((value) => (value ? { ...value, closing: true } : null))
+        }
+        t={t}
+      />
+    ) : null;
   const popupInPreview = Boolean(copy?.anchor.closest('#preview-dialog'));
   const popupInSearch = Boolean(copy?.anchor.closest('#search-dialog'));
   const themeIcon =
@@ -410,7 +440,7 @@ export function App() {
             </Menu>
           </div>
         </header>
-        {!catalog ? (
+        {!catalog && !legalKind ? (
           <main className="app-state">
             <Search />
             <p>{error ? t('loadFailed') : t('loading')}</p>
@@ -428,28 +458,38 @@ export function App() {
           </main>
         ) : (
           <>
-            <div className="layout">
-              <DirectorySidebar
-                open={mobileNav}
-                onOpenChange={setMobileNav}
-                restoreFocus={() => {
-                  if (!searchOpen)
-                    navTrigger.current?.focus({ preventScroll: true });
-                }}
-                t={t}
-              >
-                <DirectoryTree
-                  entries={catalog.entries}
-                  path={normalized || ''}
-                  navigate={navigate}
-                  expanded={expandedDirectories}
-                  setExpanded={setExpandedDirectories}
+            <div
+              className={'layout' + (!catalog ? ' layout-without-sidebar' : '')}
+            >
+              {catalog && (
+                <DirectorySidebar
+                  open={mobileNav}
+                  onOpenChange={setMobileNav}
+                  restoreFocus={() => {
+                    if (!searchOpen)
+                      navTrigger.current?.focus({ preventScroll: true });
+                  }}
                   t={t}
-                />
-              </DirectorySidebar>
+                >
+                  <DirectoryTree
+                    entries={catalog.entries}
+                    path={normalized || ''}
+                    navigate={navigate}
+                    expanded={expandedDirectories}
+                    setExpanded={setExpandedDirectories}
+                    t={t}
+                  />
+                </DirectorySidebar>
+              )}
               <main
                 ref={main}
-                className={isHistory ? 'history-main' : undefined}
+                className={
+                  isHistory
+                    ? 'history-main'
+                    : legalKind
+                      ? 'legal-main'
+                      : undefined
+                }
               >
                 <nav
                   id="breadcrumbs"
@@ -470,7 +510,11 @@ export function App() {
                           index === segments.length - 1 ? 'page' : undefined
                         }
                       >
-                        {isHistory ? t('history') : part}
+                        {isHistory
+                          ? t('history')
+                          : legalKind
+                            ? t(legalKind)
+                            : part}
                       </button>
                     </span>
                   ))}
@@ -485,6 +529,13 @@ export function App() {
                   </div>
                 ) : isHistory ? (
                   <HistoryPage t={t} />
+                ) : legalKind ? (
+                  <LegalPage
+                    kind={legalKind}
+                    lang={lang}
+                    navigate={navigate}
+                    t={t}
+                  />
                 ) : (
                   <>
                     <div className="heading">
@@ -546,10 +597,16 @@ export function App() {
                               <button
                                 className="file-name"
                                 data-file={file.path}
+                                disabled={!file.dir && !accepted}
+                                title={
+                                  !file.dir && !accepted
+                                    ? t('acceptRequired')
+                                    : undefined
+                                }
                                 aria-label={`${file.dir ? t('openFolder') : t('previewFile')} ${file.name}`}
                                 onClick={(event) => {
                                   if (file.dir) navigate(file.path);
-                                  else {
+                                  else if (accepted) {
                                     previewTrigger.current =
                                       event.currentTarget;
                                     setCopy(null);
@@ -589,8 +646,13 @@ export function App() {
                                 {!file.dir && (
                                   <Button
                                     data-advanced={file.path}
+                                    disabled={!accepted}
                                     aria-label={t('advanced')}
-                                    title={t('advanced')}
+                                    title={
+                                      accepted
+                                        ? t('advanced')
+                                        : t('acceptRequired')
+                                    }
                                     onClick={(event) => advanced(file, event)}
                                   >
                                     <CodeXml />
@@ -630,84 +692,42 @@ export function App() {
                 )}
               </main>
             </div>
-            <footer className="page-footer">
-              <a
-                href="https://github.com/TomyJan/MoeCDN"
-                target="_blank"
-                rel="noopener"
-              >
-                MoeCDN
-              </a>
-              {catalog.revision && (
-                <>
-                  {' '}
-                  <a
-                    className="commit-link"
-                    href={
-                      'https://github.com/TomyJan/MoeCDN/commit/' +
-                      catalog.revision
-                    }
-                    target="_blank"
-                    rel="noopener"
-                  >
-                    {catalog.revision.slice(0, 8)}
-                  </a>
-                </>
-              )}
-              {' | '}
-              <a
-                href="/history/"
-                aria-current={isHistory ? 'page' : undefined}
-                onClick={(event) => {
-                  if (
-                    event.button !== 0 ||
-                    event.metaKey ||
-                    event.ctrlKey ||
-                    event.shiftKey ||
-                    event.altKey
-                  )
-                    return;
-                  event.preventDefault();
-                  navigate('history/');
+            {catalog && (
+              <SearchDialog
+                key={normalized}
+                open={searchOpen}
+                onOpenChange={(open) => {
+                  setSearchOpen(open);
+                  if (!open) setCopy(null);
                 }}
+                trigger={searchTrigger}
+                fallbackTrigger={navTrigger}
+                entries={catalog.entries}
+                path={isHistory || legalKind ? '' : normalized || ''}
+                navigate={navigate}
+                preview={(file, anchor) => {
+                  if (!accepted) return;
+                  previewTrigger.current = anchor;
+                  setCopy(null);
+                  setPreview(file);
+                  setPreviewOpen(true);
+                }}
+                advanced={advanced}
+                t={t}
               >
-                {t('history')}
-              </a>
-              {' | '}
-              <a
-                href="https://beian.miit.gov.cn/"
-                target="_blank"
-                rel="noopener"
-              >
-                鲁ICP备2021003464号-1
-              </a>
-            </footer>
-            <SearchDialog
-              key={normalized}
-              open={searchOpen}
-              onOpenChange={(open) => {
-                setSearchOpen(open);
-                if (!open) setCopy(null);
-              }}
-              trigger={searchTrigger}
-              fallbackTrigger={navTrigger}
-              entries={catalog.entries}
-              path={isHistory ? '' : normalized || ''}
-              navigate={navigate}
-              preview={(file, anchor) => {
-                previewTrigger.current = anchor;
-                setCopy(null);
-                setPreview(file);
-                setPreviewOpen(true);
-              }}
-              advanced={advanced}
-              t={t}
-            >
-              {popupInSearch && popup}
-            </SearchDialog>
+                {popupInSearch && popup}
+              </SearchDialog>
+            )}
           </>
         )}
-        {preview && (
+        <PageFooter
+          revision={catalog?.revision}
+          path={normalized}
+          navigate={navigate}
+          t={t}
+        />
+        <ConsentNotice navigate={navigate} t={t} />
+        {accepted && preview && (
           <Preview
             key={preview.path}
             file={preview}

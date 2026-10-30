@@ -30,6 +30,14 @@ assert(
     '/_moecdn/assets/',
   ),
 );
+for (const path of ['terms', 'privacy']) {
+  assert(
+    (await readFile('dist/' + path + '/index.html', 'utf8')).includes(
+      '/_moecdn/assets/',
+    ),
+    path + ' 页面必须生成独立静态入口',
+  );
+}
 console.log(
   `发布验证通过：${catalog.entries.filter((f) => !f.dir).length} 个原文件字节一致`,
 );

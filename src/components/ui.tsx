@@ -16,6 +16,7 @@ import { Check, Copy } from 'lucide-react';
 import type { Translate } from '../lib/i18n.ts';
 import type { Entry } from '../lib/types.ts';
 import { iconName } from '../lib/catalog.ts';
+import { useConsent } from '../lib/consent.tsx';
 export const IconThemeContext = createContext<'light' | 'dark'>('light');
 const buttonVariants = cva(
   'transition-colors focus-visible:outline-2 disabled:pointer-events-none disabled:opacity-50',
@@ -75,6 +76,7 @@ export function CopyButton({
   id?: string;
   className?: string;
 }) {
+  const { accepted } = useConsent();
   const [copied, setCopied] = useState(false),
     [failed, setFailed] = useState(false);
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -87,11 +89,19 @@ export function CopyButton({
   return (
     <Button
       id={id}
+      disabled={!accepted}
       className={clsx(className, copied && 'copy-success')}
       aria-label={copied ? t('copied') : label || t('copyLink')}
-      title={failed ? t('copyFailed') : label || t('copyLink')}
+      title={
+        !accepted
+          ? t('acceptRequired')
+          : failed
+            ? t('copyFailed')
+            : label || t('copyLink')
+      }
       data-copied={copied}
       onClick={async () => {
+        if (!accepted) return;
         try {
           await navigator.clipboard.writeText(value);
           setCopied(true);

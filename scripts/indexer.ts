@@ -21,7 +21,10 @@ export async function createIndex(
       const path = parent + child.name + (child.isDirectory() ? '/' : '');
       if (!parent && child.name.toLowerCase() === 'edgeone.json')
         throw new Error('edgeone.json 仅在仓库根目录维护，请移出资源目录。');
-      if (path.startsWith('_moecdn/') || path === 'history/')
+      if (
+        !parent &&
+        ['_moecdn', 'history', 'terms', 'privacy'].includes(child.name)
+      )
         throw new Error(
           `资源目录 ${child.name} 为程序保留，请重命名该资源目录。`,
         );

@@ -16,6 +16,23 @@ async function fixture() {
   return p;
 }
 describe('构建真实资源索引', () => {
+  it.each(['terms', 'privacy'])(
+    '根目录的普通文件 %s 也不能占用条款路径',
+    async (name) => {
+      const root = await fixture();
+      await writeFile(join(root, name), 'resource');
+      await expect(createIndex(root)).rejects.toThrow('程序保留');
+    },
+  );
+  it.each(['terms', 'privacy'])(
+    '根目录的 %s 路径保留给条款页面',
+    async (name) => {
+      const root = await fixture();
+      await mkdir(join(root, name));
+      await writeFile(join(root, name, 'index.html'), 'resource');
+      await expect(createIndex(root)).rejects.toThrow('程序保留');
+    },
+  );
   it('项目部署配置只允许维护在仓库根目录', async () => {
     const root = await fixture();
     await writeFile(join(root, 'edgeone.json'), '{}');

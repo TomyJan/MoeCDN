@@ -21,6 +21,7 @@ import type { Entry } from '../lib/types.ts';
 import type { Translate } from '../lib/i18n.ts';
 import { formatSize, resourceUrl, selectEntries } from '../lib/catalog.ts';
 import { Button, CopyButton, FileIcon, Menu } from './ui.tsx';
+import { useConsent } from '../lib/consent.tsx';
 
 export function SearchDialog({
   open,
@@ -47,6 +48,7 @@ export function SearchDialog({
   t: Translate;
   children?: ReactNode;
 }) {
+  const { accepted } = useConsent();
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<'current' | 'global'>('current');
   const [limit, setLimit] = useState(100);
@@ -151,7 +153,7 @@ export function SearchDialog({
                 }
                 if (event.key === 'ArrowDown') {
                   const first = results?.querySelector<HTMLButtonElement>(
-                    '.search-result-name',
+                    '.search-result-name:not(:disabled)',
                   );
                   if (first) {
                     event.preventDefault();
@@ -218,14 +220,14 @@ export function SearchDialog({
                     if (
                       !['ArrowDown', 'ArrowUp'].includes(event.key) ||
                       !(event.target as HTMLElement).closest(
-                        '.search-result-name',
+                        '.search-result-name:not(:disabled)',
                       )
                     )
                       return;
                     event.preventDefault();
                     const buttons = [
                       ...event.currentTarget.querySelectorAll<HTMLButtonElement>(
-                        '.search-result-name',
+                        '.search-result-name:not(:disabled)',
                       ),
                     ];
                     const index = buttons.indexOf(
@@ -240,6 +242,12 @@ export function SearchDialog({
                     <li className="search-result" key={file.path}>
                       <button
                         className="search-result-name"
+                        disabled={!file.dir && !accepted}
+                        title={
+                          !file.dir && !accepted
+                            ? t('acceptRequired')
+                            : undefined
+                        }
                         aria-label={`${file.dir ? t('openFolder') : t('previewFile')} ${file.name}`}
                         onClick={(event) => {
                           if (file.dir) {
@@ -273,8 +281,11 @@ export function SearchDialog({
                         {!file.dir && (
                           <Button
                             data-advanced={file.path}
+                            disabled={!accepted}
                             aria-label={t('advanced')}
-                            title={t('advanced')}
+                            title={
+                              accepted ? t('advanced') : t('acceptRequired')
+                            }
                             onClick={(event) => advanced(file, event)}
                           >
                             <CodeXml />
