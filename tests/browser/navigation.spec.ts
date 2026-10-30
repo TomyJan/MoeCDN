@@ -160,18 +160,75 @@ test('移动抽屉通过 Escape、遮罩和目录导航关闭后归还焦点', a
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
 });
 
-test('稍微下滚即可回顶，回到顶部后按钮消失', async ({ page }) => {
+test('回顶按钮仅在超过门槛后向上滚动时出现', async ({ page }) => {
   await page.goto('/lib/ace/1.5.1/');
   await expect(page.locator('#rows tr')).toHaveCount(100);
-  await page.evaluate(() => window.scrollTo(0, 110));
-  const back = page.getByRole('button', { name: '回到顶部', exact: true });
+  const back = page.locator('#back-to-top');
+  const scrollTo = async (top: number) => {
+    await page.evaluate(async (y) => {
+      window.scrollTo({ top: y, behavior: 'instant' });
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+    }, top);
+  };
+  await scrollTo(180);
+  await expect(back).toHaveAttribute('inert');
+  await expect(back).toHaveCSS('opacity', '0');
+  await scrollTo(140);
   await expect(back).not.toHaveAttribute('inert');
   await expect(back).toHaveCSS('opacity', '1');
+  await scrollTo(160);
+  await expect(back).toHaveAttribute('inert');
+  await expect(back).toHaveCSS('opacity', '0');
+  await scrollTo(70);
+  await expect(back).toHaveAttribute('inert');
+  await scrollTo(180);
+  await scrollTo(130);
+  await expect(back).not.toHaveAttribute('inert');
   await back.click();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
   await expect(back).toHaveAttribute('inert');
   await expect(back).toHaveCSS('opacity', '0');
 });
+
+for (const width of [1280, 390]) {
+  test(`顶栏随滚动逐步收起和展开，停滚不自动完成（${width}px）`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 740 });
+    await page.goto('/lib/ace/1.5.1/');
+    await expect(page.locator('#rows tr')).toHaveCount(100);
+    const header = page.locator('.topbar');
+    const position = () =>
+      header.evaluate((element) => element.getBoundingClientRect().top);
+    const scrollTo = async (y: number) => {
+      await page.evaluate(async (top) => {
+        window.scrollTo({ top, behavior: 'instant' });
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        );
+      }, y);
+    };
+    const height = await header.evaluate(
+      (element) => (element as HTMLElement).offsetHeight,
+    );
+    await scrollTo(32);
+    expect(await position()).toBeCloseTo(-16, 0);
+    await page.waitForTimeout(300);
+    expect(await position()).toBeCloseTo(-16, 0);
+    await scrollTo(64);
+    expect(await position()).toBeCloseTo(-32, 0);
+    await scrollTo(300);
+    expect(await position()).toBeCloseTo(-height, 0);
+    await scrollTo(280);
+    expect(await position()).toBeCloseTo(-height + 10, 0);
+    await scrollTo(300);
+    expect(await position()).toBeCloseTo(-height, 0);
+    await scrollTo(0);
+    expect(await position()).toBeCloseTo(0, 0);
+  });
+}
 
 test('导航文字仅在空间不足时收为图标，扩宽及语言切换后重新判断', async ({
   page,

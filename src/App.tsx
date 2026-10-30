@@ -73,7 +73,6 @@ export function App() {
     [copy, setCopy] = useState<CopyTarget | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [mobileNav, setMobileNav] = useState(false),
-    [navHidden, setNavHidden] = useState(false),
     [backTop, setBackTop] = useState(false);
   const serial = useRef(0),
     sentinel = useRef<HTMLDivElement>(null),
@@ -149,19 +148,42 @@ export function App() {
     return () => clearTimeout(timeout);
   }, [preview, previewOpen]);
   useEffect(() => {
-    let previous = scrollY;
+    const element = header.current;
+    if (!element) return;
+    const position = () =>
+      Math.max(
+        0,
+        Math.min(scrollY, document.documentElement.scrollHeight - innerHeight),
+      );
+    let previous = position();
+    let offset = 0;
+    let frame = 0;
+    element.style.setProperty('--nav-offset', '0px');
+    const update = () => {
+      frame = 0;
+      const y = position();
+      const delta = y - previous;
+      previous = y;
+      if (delta !== 0 || y <= 80) setBackTop(y > 80 && delta < 0);
+      offset =
+        preview || mobileNav || searchOpen
+          ? 0
+          : Math.min(
+              element.offsetHeight,
+              y / 2,
+              Math.max(0, offset + delta / 2),
+            );
+      element.style.setProperty('--nav-offset', `${offset}px`);
+    };
     const scroll = () => {
-      const y = scrollY;
-      setBackTop(y > 80);
-      if (Math.abs(y - previous) > 7) {
-        setNavHidden(y > previous && y > 90 && !preview && !mobileNav);
-        previous = y;
-      }
-      if (y < 50) setNavHidden(false);
+      if (!frame) frame = requestAnimationFrame(update);
     };
     addEventListener('scroll', scroll, { passive: true });
-    return () => removeEventListener('scroll', scroll);
-  }, [preview, mobileNav]);
+    return () => {
+      removeEventListener('scroll', scroll);
+      cancelAnimationFrame(frame);
+    };
+  }, [preview, mobileNav, searchOpen]);
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
       if (
@@ -298,7 +320,7 @@ export function App() {
         <header
           ref={header}
           data-compact-links={compactLinks}
-          className={'topbar' + (navHidden ? ' nav-hidden' : '')}
+          className="topbar"
         >
           <div className="top-leading">
             <Button
