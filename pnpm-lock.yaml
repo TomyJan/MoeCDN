@@ -233,6 +233,9 @@ importers:
       eslint:
         specifier: 10.13.0
         version: 10.13.0(jiti@2.7.0)
+      lightningcss:
+        specifier: 1.33.0
+        version: 1.33.0
       material-icon-theme:
         specifier: 5.40.0
         version: 5.40.0
