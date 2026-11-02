@@ -146,9 +146,11 @@ test('移动抽屉通过 Escape、遮罩和目录导航关闭后归还焦点', a
   await page.keyboard.press('Escape');
   await expect(trigger).toBeFocused();
   await trigger.click();
-  await page
-    .locator('.sidebar-backdrop')
-    .click({ position: { x: 350, y: 700 } });
+  const backdrop = page.locator('.sidebar-backdrop');
+  const bounds = (await backdrop.boundingBox())!;
+  await backdrop.click({
+    position: { x: bounds.width - 10, y: bounds.height - 40 },
+  });
   await expect(trigger).toBeFocused();
   await trigger.click();
   await page.locator('#tree .tree-name').filter({ hasText: /^lib$/ }).click();

@@ -2,6 +2,7 @@
 @source "./";
 :root {
   color-scheme: light dark;
+  scrollbar-gutter: stable;
   --bg: light-dark(#fafafa, #141414);
   --panel: light-dark(#fff, #1b1b1b);
   --hover: light-dark(#f1f1f1, #252525);
@@ -39,6 +40,12 @@
 }
 body {
   margin: 0;
+}
+@supports (scrollbar-gutter: stable) {
+  /* 根元素已保留滚动条占位，避免 Radix 锁定滚动时再次补偿宽度。 */
+  :root body[data-scroll-locked] {
+    margin-right: 0 !important;
+  }
 }
 button,
 input,
