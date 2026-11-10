@@ -30,7 +30,7 @@ export function PageFooter({
             target="_blank"
             rel="noopener"
           >
-            {revision.slice(0, 8)}
+            {revision.slice(0, 7)}
           </a>
         </>
       )}
