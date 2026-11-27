@@ -29,7 +29,7 @@
     "clsx": "2.1.1",
     "dompurify": "3.5.0",
     "lowlight": "^3.3.0",
-    "lucide-react": "1.77.0",
+    "lucide-react": "1.78.0",
     "marked": "18.2.1",
     "pdfjs-dist": "^6.5.438",
     "radix-ui": "1.8.1",
